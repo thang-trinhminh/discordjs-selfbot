@@ -7,6 +7,7 @@ const { OAuth2Scopes, Routes } = require('discord-api-types/v10');
 const BaseClient = require('./BaseClient');
 const ActionsManager = require('./actions/ActionsManager');
 const ClientVoiceManager = require('./voice/ClientVoiceManager');
+const { SelfbotShardingStrategy } = require('./websocket/SelfbotShardingStrategy');
 const WebSocketManager = require('./websocket/WebSocketManager');
 const { DiscordjsError, DiscordjsTypeError, DiscordjsRangeError, ErrorCodes } = require('../errors');
 const BaseGuildEmojiManager = require('../managers/BaseGuildEmojiManager');
@@ -79,6 +80,11 @@ class Client extends BaseClient {
     }
 
     this._validateOptions();
+
+    // `WebSocketManager.js` forward option này sang @discordjs/ws.
+    // Đặt ở đây chứ không ở Options.createDefault() vì strategy cần tham chiếu client.
+    this.options.ws.buildStrategy ??= manager =>
+      new SelfbotShardingStrategy(manager, this.options, () => this.token);
 
     /**
      * The WebSocket manager of the client
