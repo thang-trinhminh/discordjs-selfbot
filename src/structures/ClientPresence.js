@@ -2,6 +2,7 @@
 
 const { GatewayOpcodes, ActivityType } = require('discord-api-types/v10');
 const { Presence } = require('./Presence');
+const { BaseActivityBuilder } = require('./RichPresence');
 const { DiscordjsTypeError, ErrorCodes } = require('../errors');
 
 /**
@@ -48,6 +49,18 @@ class ClientPresence extends Presence {
     };
     if (activities?.length) {
       for (const [i, activity] of activities.entries()) {
+        // Builder của selfbot (CustomStatus, RichPresence, SpotifyRPC) tự dựng
+        // payload gateway đầy đủ. Upstream chỉ giữ type/name/state/url vì bot
+        // không được phát emoji, asset, button hay party.
+        //
+        // Kiểm `instanceof` chứ không duck-type trên `toJSON`: `Activity` của
+        // upstream hiện không có `toJSON`, nhưng nếu sau này có thì duck-type
+        // sẽ đẩy nhầm object camelCase lên gateway.
+        if (activity instanceof BaseActivityBuilder) {
+          data.activities.push(activity.toJSON());
+          continue;
+        }
+
         if (typeof activity.name !== 'string') {
           throw new DiscordjsTypeError(ErrorCodes.InvalidType, `activities[${i}].name`, 'string');
         }
@@ -64,6 +77,8 @@ class ClientPresence extends Presence {
           name: activity.name,
           state: activity.state,
           url: activity.url,
+          // User account phát được emoji trong custom status.
+          ...(activity.emoji ? { emoji: activity.emoji } : {}),
         });
       }
     } else if (!activities && (status || afk || since) && this.activities.length) {

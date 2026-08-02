@@ -53,8 +53,11 @@ exports.WebSocketShardEvents = require('./util/WebSocketShardEvents');
 exports.version = require('../package.json').version;
 exports.RelationshipType = require('./util/UserEnums').RelationshipType;
 exports.CallState = require('./structures/CallState');
+exports.CustomStatus = require('./structures/RichPresence').CustomStatus;
 exports.GroupDMChannel = require('./structures/GroupDMChannel');
+exports.RichPresence = require('./structures/RichPresence').RichPresence;
 exports.Session = require('./structures/Session');
+exports.SpotifyRPC = require('./structures/RichPresence').SpotifyRPC;
 exports.UserRoutes = require('./util/UserRoutes').UserRoutes;
 
 // Managers

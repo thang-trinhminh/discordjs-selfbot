@@ -26,6 +26,7 @@ Mọi sửa đổi lên file upstream phải ghi vào đây kèm lý do một d�
 | `src/client/Client.js` | Cắm `SelfbotShardingStrategy` vào `options.ws.buildStrategy`; thêm manager `relationships`, `sessions`, `notes`, `settings` |
 | `src/client/websocket/handlers/index.js` | Đăng ký handler `RELATIONSHIP_*`, `USER_NOTE_UPDATE`, `USER_SETTINGS_UPDATE`, `USER_GUILD_SETTINGS_UPDATE`, `CALL_*`, `CHANNEL_RECIPIENT_*` |
 | `src/client/websocket/handlers/READY.js` | Guard `data.application` (user token không nhận field này); seed relationships, notes, session hash, user settings, guild settings |
+| `src/structures/ClientPresence.js` | `_parse` đẩy nguyên payload của builder selfbot và giữ `emoji`; upstream chỉ giữ `type/name/state/url` vì bot không phát được emoji, asset, button, party |
 | `src/structures/Guild.js` | Thêm manager `settings` (setting thông báo của client user cho guild) |
 | `src/util/Channels.js` | `createChannel` dựng `GroupDMChannel` thay `PartialGroupDMChannel` (user account dùng group DM đầy đủ) |
 | `src/util/Events.js` | Thêm `RelationshipAdd/Remove/Update`, `UserNoteUpdate`, `CallCreate/Update/Delete`, `ChannelRecipientAdd/Remove` |

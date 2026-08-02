@@ -33,6 +33,15 @@ const UserRoutes = {
   },
 
   /**
+   * Route đẩy ảnh ngoài lên proxy của Discord để dùng làm asset rich presence.
+   * @param {Snowflake} applicationId Id của application
+   * @returns {string}
+   */
+  applicationExternalAssets(applicationId) {
+    return `/applications/${applicationId}/external-assets`;
+  },
+
+  /**
    * Route cuộc gọi của một kênh DM hoặc group DM.
    * @param {Snowflake} channelId Id của kênh
    * @returns {string}

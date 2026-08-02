@@ -4,6 +4,7 @@ const { Collection } = require('@discordjs/collection');
 const { ActivityType } = require('discord-api-types/v10');
 const BaseManager = require('./BaseManager');
 const { DiscordjsTypeError, DiscordjsRangeError, ErrorCodes } = require('../errors');
+const { CustomStatus } = require('../structures/RichPresence');
 const { UserRoutes } = require('../util/UserRoutes');
 
 /**
@@ -110,21 +111,20 @@ class ClientUserSettingManager extends BaseManager {
     const activities = this.client.presence.activities.filter(activity => activity.type !== ActivityType.Custom);
 
     if (data.custom_status) {
-      activities.push({
-        name: 'Custom Status',
-        type: ActivityType.Custom,
-        state: data.custom_status.text ?? null,
-      });
+      const custom = new CustomStatus().setState(data.custom_status.text ?? null);
+
+      if (data.custom_status.emoji_id) {
+        custom.setEmoji(this.client.emojis.cache.get(data.custom_status.emoji_id) ?? data.custom_status.emoji_id);
+      } else if (data.custom_status.emoji_name) {
+        custom.setEmoji(data.custom_status.emoji_name);
+      }
+
+      activities.push(custom);
     }
 
     this.client.emit('debug', '[SETTING > ClientUser] Sync activities & status');
     this.client.user.setPresence({ activities, status: data.status ?? undefined });
   }
-
-  // Ponytail: emoji của custom status không được đẩy vào presence.
-  // `ClientPresence#_parse` của upstream chỉ giữ type/name/state/url và bỏ emoji.
-  // Hỗ trợ emoji nghĩa là phải sửa file upstream đó — để tới khi port Presence
-  // ở P3 phần sau, lúc đó sửa một lần cho cả RichPresence và SpotifyRPC.
 
   /**
    * Tải lại setting từ API.
@@ -181,6 +181,19 @@ class ClientUserSettingManager extends BaseManager {
   async setCustomStatus(options) {
     if (typeof options !== 'object' || options === null) {
       return this.edit({ custom_status: null });
+    }
+
+    // Chấp nhận cả instance CustomStatus như bản v13.
+    if (options instanceof CustomStatus) {
+      const activity = options.toJSON();
+      return this.edit({
+        custom_status: {
+          text: activity.state,
+          emoji_id: activity.emoji?.id ?? null,
+          emoji_name: activity.emoji?.name ?? null,
+          expires_at: null,
+        },
+      });
     }
 
     const body = { text: null, emoji_name: null, expires_at: null };
