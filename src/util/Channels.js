@@ -11,7 +11,8 @@ const getTextChannel = lazy(() => require('../structures/TextChannel'));
 const getThreadChannel = lazy(() => require('../structures/ThreadChannel'));
 const getVoiceChannel = lazy(() => require('../structures/VoiceChannel'));
 const getDirectoryChannel = lazy(() => require('../structures/DirectoryChannel'));
-const getPartialGroupDMChannel = lazy(() => require('../structures/PartialGroupDMChannel'));
+// User account dùng group DM đầy đủ, không phải bản partial của bot.
+const getGroupDMChannel = lazy(() => require('../structures/GroupDMChannel'));
 const getForumChannel = lazy(() => require('../structures/ForumChannel'));
 const getMediaChannel = lazy(() => require('../structures/MediaChannel'));
 
@@ -37,7 +38,7 @@ function createChannel(client, data, guild, { allowUnknownGuild } = {}) {
     if ((data.recipients && data.type !== ChannelType.GroupDM) || data.type === ChannelType.DM) {
       channel = new (getDMChannel())(client, data);
     } else if (data.type === ChannelType.GroupDM) {
-      channel = new (getPartialGroupDMChannel())(client, data);
+      channel = new (getGroupDMChannel())(client, data);
     }
   } else {
     guild ??= client.guilds.cache.get(data.guild_id);

@@ -52,6 +52,8 @@ __exportStar(require('./util/Util.js'), exports);
 exports.WebSocketShardEvents = require('./util/WebSocketShardEvents');
 exports.version = require('../package.json').version;
 exports.RelationshipType = require('./util/UserEnums').RelationshipType;
+exports.CallState = require('./structures/CallState');
+exports.GroupDMChannel = require('./structures/GroupDMChannel');
 exports.Session = require('./structures/Session');
 exports.UserRoutes = require('./util/UserRoutes').UserRoutes;
 

@@ -33,6 +33,24 @@ const UserRoutes = {
   },
 
   /**
+   * Route cuộc gọi của một kênh DM hoặc group DM.
+   * @param {Snowflake} channelId Id của kênh
+   * @returns {string}
+   */
+  channelCall(channelId) {
+    return `/channels/${channelId}/call`;
+  },
+
+  /**
+   * Route đổ chuông cho thành viên trong cuộc gọi.
+   * @param {Snowflake} channelId Id của kênh
+   * @returns {string}
+   */
+  channelCallRing(channelId) {
+    return `/channels/${channelId}/call/ring`;
+  },
+
+  /**
    * Route setting tài khoản của client user.
    * @returns {string}
    */
