@@ -27,6 +27,7 @@ Mọi sửa đổi lên file upstream phải ghi vào đây kèm lý do một d�
 | `src/client/websocket/handlers/index.js` | Đăng ký handler `RELATIONSHIP_*`, `USER_NOTE_UPDATE`, `USER_SETTINGS_UPDATE`, `USER_GUILD_SETTINGS_UPDATE`, `CALL_*`, `CHANNEL_RECIPIENT_*` |
 | `src/client/websocket/handlers/READY.js` | Guard `data.application` (user token không nhận field này); seed relationships, notes, session hash, user settings, guild settings |
 | `src/structures/ClientPresence.js` | `_parse` đẩy nguyên payload của builder selfbot và giữ `emoji`; upstream chỉ giữ `type/name/state/url` vì bot không phát được emoji, asset, button, party |
+| `src/structures/ClientUser.js` | Trộn `ClientUserActions` vào prototype (một dòng `Object.assign`); ghi đè `edit` vì bản upstream destructure đúng `{ username, avatar, banner }` nên vứt im lặng `password`, `bio`, `pronouns`, `global_name`, `accent_color` |
 | `src/structures/Guild.js` | Thêm manager `settings` (setting thông báo của client user cho guild) |
 | `src/util/Channels.js` | `createChannel` dựng `GroupDMChannel` thay `PartialGroupDMChannel` (user account dùng group DM đầy đủ) |
 | `src/util/Events.js` | Thêm `RelationshipAdd/Remove/Update`, `UserNoteUpdate`, `CallCreate/Update/Delete`, `ChannelRecipientAdd/Remove` |

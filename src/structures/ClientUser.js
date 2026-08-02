@@ -1,6 +1,7 @@
 'use strict';
 
 const { Routes } = require('discord-api-types/v10');
+const ClientUserActions = require('./ClientUserActions');
 const User = require('./User');
 const { resolveImage } = require('../util/DataResolver');
 
@@ -200,5 +201,9 @@ class ClientUser extends User {
     return this.setPresence({ afk, shardId });
   }
 }
+
+// Trộn các thao tác chỉ tài khoản người dùng mới có. Ghi đè cả `edit` và
+// `setUsername` của upstream — xem ClientUserActions.js để biết lý do.
+Object.assign(ClientUser.prototype, ClientUserActions);
 
 module.exports = ClientUser;

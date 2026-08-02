@@ -60,6 +60,47 @@ const UserRoutes = {
   },
 
   /**
+   * Route ngừng đổ chuông một cuộc gọi.
+   * @param {Snowflake} channelId Id của kênh
+   * @returns {string}
+   */
+  channelCallStopRinging(channelId) {
+    return `/channels/${channelId}/call/stop-ringing`;
+  },
+
+  /**
+   * Route vào/rời nhà HypeSquad.
+   * @returns {string}
+   */
+  hypesquadOnline() {
+    return '/hypesquad/online';
+  },
+
+  /**
+   * Route lời mời kết bạn dùng chung.
+   * @returns {string}
+   */
+  userInvites() {
+    return '/users/@me/invites';
+  },
+
+  /**
+   * Route phát activity kiểu Samsung Game Launcher.
+   * @returns {string}
+   */
+  presences() {
+    return '/presences';
+  },
+
+  /**
+   * Route số burst reaction credit còn lại.
+   * @returns {string}
+   */
+  burstCredits() {
+    return '/users/@me/burst-credits';
+  },
+
+  /**
    * Route setting tài khoản của client user.
    * @returns {string}
    */

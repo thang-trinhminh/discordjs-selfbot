@@ -28,4 +28,32 @@ const RelationshipType = {
   Suggestion: 6,
 };
 
-module.exports = { RelationshipType };
+/**
+ * Nhà HypeSquad. `Leave` không phải nhà — dùng nó để rời.
+ * @typedef {Object} HypeSquadHouse
+ * @property {number} Leave Rời khỏi nhà hiện tại
+ * @property {number} Bravery Nhà Bravery
+ * @property {number} Brilliance Nhà Brilliance
+ * @property {number} Balance Nhà Balance
+ */
+const HypeSquadHouse = {
+  Leave: 0,
+  Bravery: 1,
+  Brilliance: 2,
+  Balance: 3,
+};
+
+/**
+ * Hành động cho activity kiểu Samsung Game Launcher.
+ * @typedef {Object} SamsungActivityAction
+ * @property {string} Start Bắt đầu phát
+ * @property {string} Update Cập nhật
+ * @property {string} Stop Dừng phát
+ */
+const SamsungActivityAction = {
+  Start: 'START',
+  Update: 'UPDATE',
+  Stop: 'STOP',
+};
+
+module.exports = { RelationshipType, HypeSquadHouse, SamsungActivityAction };
