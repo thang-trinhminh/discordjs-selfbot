@@ -2,6 +2,7 @@
 
 const { DefaultRestOptions, DefaultUserAgentAppendix } = require('@discordjs/rest');
 const { toSnakeCase } = require('./Transformers');
+const { DefaultSuperProperties, DefaultCapabilities, DefaultClientState } = require('./SelfbotDefaults');
 const { version } = require('../../package.json');
 
 // TODO(ckohen): switch order of params so full manager is first and "type" is optional
@@ -115,6 +116,9 @@ class Options extends null {
       closeTimeout: 5_000,
       waitGuildTimeout: 15_000,
       shardCount: 1,
+      // User account không dùng intents. Để 0 để `_validateOptions` không ném
+      // ClientMissingIntents; giá trị này bị loại khỏi payload identify.
+      intents: 0,
       makeCache: this.cacheWithLimits(this.DefaultMakeCacheSettings),
       partials: [],
       failIfNotExists: true,
@@ -124,7 +128,18 @@ class Options extends null {
       ws: {
         large_threshold: 50,
         version: 10,
+        properties: { ...DefaultSuperProperties },
+        capabilities: DefaultCapabilities,
+        client_state: { ...DefaultClientState },
+        // Client điền ở constructor vì strategy cần tham chiếu tới client.
+        buildStrategy: null,
       },
+      http: {
+        headers: {},
+        agent: null,
+      },
+      captchaSolver: null,
+      captchaRetryLimit: 3,
       rest: {
         ...DefaultRestOptions,
         userAgentAppendix: this.userAgentAppendix,
