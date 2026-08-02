@@ -66,10 +66,9 @@ Kết luận: delta selfbot bounded, khả thi để re-apply lên nền v14.
 - Lấy `packages/discord.js/{src,typings}` bung ra root repo, giữ layout giống `discord.js-selfbot-v13`.
 - Ghim base vào `UPSTREAM.md`: tên branch + tag + commit SHA.
 
-**Vì sao `origin/v14` chứ không `main`:** `main` đã là v15-dev, đã bỏ `WebSocketManager.js` /
-`WebSocketShard.js` nội bộ để dùng package `@discordjs/ws`. Selfbot bắt buộc phải control identify
-payload (bỏ `intents` và `shard`, thêm `capabilities`, `client_state`, `properties` giả lập browser)
-— `@discordjs/ws` không expose chỗ đó. Branch `v14` vẫn giữ WS nội bộ.
+**Vì sao `origin/v14` chứ không `main`:** `main` đã là v15-dev — API surface đang đổi, xa v13 hơn
+nữa, và chưa release. Branch `v14` là dòng ổn định, còn nhận fix. Cả hai branch đều đã dùng
+`@discordjs/ws` (xem mục 3.3), nên đây không phải tiêu chí chọn.
 
 **Quy trình nâng cấp upstream về sau** (không dùng `git merge`, vì layout monorepo khác):
 
@@ -112,16 +111,42 @@ Kiểm tra `origin/v14:packages/rest/src/lib/utils/types.ts` xác nhận package
 
 ### 3.3 Gateway
 
-Giữ nguyên `src/client/websocket/WebSocketShard.js` của v14, patch (~60 dòng, đo từ diff v13):
+**Đính chính so với bản nháp đầu:** `discord.js@14.27.0` KHÔNG còn WebSocket nội bộ.
+Commit `a9e0de428` (`refactor(WebSocketManager): use /ws package internally`, v14.9) đã chuyển sang
+package `@discordjs/ws`. File `src/client/websocket/WebSocketShard.js` của v14 chỉ còn 234 dòng
+wrapper, không chứa logic `identify`. Bản v14 cuối còn WS nội bộ là ~14.8 (2023) — quá cũ, dùng
+sẽ mất 2 năm fix upstream.
 
-- `identify()`: xoá `intents`, xoá `shard`, xoá `version` / `agent`; thêm `capabilities`,
-  `client_state`, `properties` browser
-- Strip prefix `$` trong `properties` (Discord đổi schema)
-- `expectedGuilds` chỉ lấy guild có `unavailable === true`
-- Hỗ trợ proxy agent khi tạo WebSocket
+**Cách xử lý — không fork `@discordjs/ws`.** Đã verify trên source `origin/v14`:
 
-`Options.js`: thêm `ws.properties`, `ws.capabilities`, `ws.client_state`, `http.headers` mặc định,
-`captchaSolver`, `captchaRetryLimit`, `patchVoice`, `checkUpdate`.
+- `WebSocketShard#send` khai báo `public async send(payload)` (`packages/ws/src/ws/WebSocketShard.ts:430`)
+  → patch được ở mức từng instance, không cần đụng prototype toàn cục
+- `identify()` build payload rồi gọi `this.send({ op: GatewayOpcodes.Identify, d })`
+  (`WebSocketShard.ts:490-551`) → chặn ở `send` là đủ, không phải thay cả `identify`
+- `WebSocketManagerOptions.buildStrategy` là option công khai và `SimpleShardingStrategy` được
+  export từ `@discordjs/ws` → subclass, override `spawn()`, patch từng shard sau khi `super.spawn()`
+- `packages/discord.js/src/client/websocket/WebSocketManager.js:163` **đã** forward
+  `ws.buildStrategy` sang `WSWebSocketManager` → không phải sửa file này
+
+Payload identify cho user account: bỏ `intents`, bỏ `shard`; thêm `capabilities`, `client_state`,
+`properties` giả lập browser; strip prefix `$` trong `properties`.
+
+**Chặn thứ hai — `/gateway/bot`.** `@discordjs/ws` gọi `Routes.gatewayBot()`
+(`WebSocketManager.ts:279`), user token bị 401. REST shim chặn đúng route đó và trả response tự
+dựng: `{ url: 'wss://gateway.discord.gg', shards: 1, session_start_limit: { total: 1000,
+remaining: 1000, reset_after: 0, max_concurrency: 1 } }`.
+
+**Chặn thứ ba — `intents` bắt buộc.** `Client._validateOptions` (`Client.js:541`) ném
+`ClientMissingIntents` khi `options.intents === undefined`. Đặt mặc định `intents: 0` trong
+`Options.createDefault()`; giá trị này bị bỏ khỏi payload identify nên vô hại.
+
+`Options.js`: thêm `ws.properties`, `ws.capabilities`, `ws.client_state`, `ws.buildStrategy` mặc
+định, `http.headers`, `captchaSolver`, `captchaRetryLimit`, `intents: 0`.
+
+**Rủi ro còn lại:** subclass `SimpleShardingStrategy` truy cập field `shards` (khai báo
+`private readonly` trong TS — chỉ là compile-time, runtime vẫn public). Nếu upstream đổi tên field
+thì gãy. Giảm thiểu: unit test khẳng định `strategy.shards` là `Collection` sau `spawn()`, gãy sẽ
+báo ngay chứ không âm thầm.
 
 ### 3.4 Voice / Video
 
@@ -244,8 +269,9 @@ network) khẳng định header sinh ra khớp snapshot và authorization không
 
 ### P2 — Gateway
 
-Patch `WebSocketShard#identify`, `Options.js` (`ws.properties` / `capabilities` / `client_state`),
-`READY.js`, proxy cho WS.
+`SelfbotShardingStrategy` (subclass `SimpleShardingStrategy`, patch `shard.send` để viết lại
+identify payload), `Options.js` (`ws.properties` / `capabilities` / `client_state` /
+`buildStrategy` / `intents: 0`), chặn `/gateway/bot` trong REST shim, `READY.js`.
 
 **Xong khi:** `client.login(token)` phát `ready`, `client.user` đúng, guild cache có dữ liệu.
 
@@ -316,6 +342,7 @@ Selfbot không test end-to-end tự động được nếu không có token th�
 | Rủi ro | Ảnh hưởng | Giảm thiểu |
 |---|---|---|
 | `@discordjs/rest` đổi chữ ký `makeRequest` | REST shim gãy khi update | Pin exact version; unit test khẳng định shim được gọi |
+| `@discordjs/ws` đổi `WebSocketShard#send` hoặc field `shards` của `SimpleShardingStrategy` | Identify patch gãy | Pin exact version; unit test khẳng định `send` là function và `shards` là `Collection` sau `spawn()` |
 | Read-side string comparison không shim được | Code consumer cần sửa | Codemod script + ghi rõ trong `MIGRATION.md` |
 | Voice stack kiểu v12 lệch với cấu trúc v14 | P5 kéo dài | Stack độc lập, chỉ chạm 4 điểm; nếu bí thì tách thành package phụ |
 | Discord đổi API giữa chừng | Toàn bộ lib | Không tránh được — đây là bản chất selfbot; đã nêu với người dùng |
