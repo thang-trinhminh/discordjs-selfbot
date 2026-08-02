@@ -1,9 +1,9 @@
 'use strict';
 
 const EventEmitter = require('node:events');
-const { createSelfbotREST } = require('../rest/SelfbotREST');
 const { Routes } = require('discord-api-types/v10');
 const { DiscordjsTypeError, ErrorCodes } = require('../errors');
+const { createSelfbotREST } = require('../rest/SelfbotREST');
 const Options = require('../util/Options');
 const { flatten } = require('../util/Util');
 

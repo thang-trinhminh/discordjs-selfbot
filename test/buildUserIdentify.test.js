@@ -1,9 +1,10 @@
 'use strict';
 
-const { test } = require('node:test');
 const assert = require('node:assert');
-const buildUserIdentify = require('../src/util/buildUserIdentify.js');
+const { Buffer } = require('node:buffer');
+const { test } = require('node:test');
 const { DefaultSuperProperties, DefaultCapabilities, DefaultClientState } = require('../src/util/SelfbotDefaults.js');
+const buildUserIdentify = require('../src/util/buildUserIdentify.js');
 
 const base = {
   token: 'tok',

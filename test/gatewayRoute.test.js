@@ -1,7 +1,7 @@
 'use strict';
 
-const { test } = require('node:test');
 const assert = require('node:assert');
+const { test } = require('node:test');
 const { createSelfbotREST, makeGatewayBotResponse } = require('../src/rest/SelfbotREST.js');
 const Options = require('../src/util/Options.js');
 

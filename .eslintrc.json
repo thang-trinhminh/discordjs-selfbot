@@ -17,6 +17,19 @@
 		"**/src/util/Voice.js",
 		"**/examples/**"
 	],
+	"overrides": [
+		{
+			"files": [
+				"**/*.mjs"
+			],
+			"parserOptions": {
+				"sourceType": "module"
+			},
+			"rules": {
+				"strict": "off"
+			}
+		}
+	],
 	"rules": {
 		"import/order": [
 			"error",

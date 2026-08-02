@@ -1,7 +1,7 @@
 'use strict';
 
-const { test } = require('node:test');
 const assert = require('node:assert');
+const { test } = require('node:test');
 const { GatewayOpcodes } = require('discord-api-types/v10');
 const { patchShardSend } = require('../src/client/websocket/SelfbotShardingStrategy.js');
 const Options = require('../src/util/Options.js');

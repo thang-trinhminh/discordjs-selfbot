@@ -1,7 +1,7 @@
 'use strict';
 
-const { test } = require('node:test');
 const assert = require('node:assert');
+const { test } = require('node:test');
 const Options = require('../src/util/Options.js');
 const { DefaultCapabilities } = require('../src/util/SelfbotDefaults.js');
 

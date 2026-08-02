@@ -83,8 +83,7 @@ class Client extends BaseClient {
 
     // `WebSocketManager.js` forward option này sang @discordjs/ws.
     // Đặt ở đây chứ không ở Options.createDefault() vì strategy cần tham chiếu client.
-    this.options.ws.buildStrategy ??= manager =>
-      new SelfbotShardingStrategy(manager, this.options, () => this.token);
+    this.options.ws.buildStrategy ??= manager => new SelfbotShardingStrategy(manager, this.options, () => this.token);
 
     /**
      * The WebSocket manager of the client

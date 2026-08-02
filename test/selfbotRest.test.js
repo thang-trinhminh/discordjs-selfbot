@@ -1,7 +1,8 @@
 'use strict';
 
-const { test } = require('node:test');
 const assert = require('node:assert');
+const { Buffer } = require('node:buffer');
+const { test } = require('node:test');
 const { buildSelfbotHeaders, rewriteAuthorization } = require('../src/rest/SelfbotREST.js');
 const { DefaultUserAgent, DefaultSuperProperties } = require('../src/util/SelfbotDefaults.js');
 

@@ -1,8 +1,8 @@
 'use strict';
 
 const { DefaultRestOptions, DefaultUserAgentAppendix } = require('@discordjs/rest');
-const { toSnakeCase } = require('./Transformers');
 const { DefaultSuperProperties, DefaultCapabilities, DefaultClientState } = require('./SelfbotDefaults');
+const { toSnakeCase } = require('./Transformers');
 const { version } = require('../../package.json');
 
 // TODO(ckohen): switch order of params so full manager is first and "type" is optional
