@@ -52,6 +52,7 @@ __exportStar(require('./util/Util.js'), exports);
 exports.WebSocketShardEvents = require('./util/WebSocketShardEvents');
 exports.version = require('../package.json').version;
 exports.RelationshipType = require('./util/UserEnums').RelationshipType;
+exports.Session = require('./structures/Session');
 exports.UserRoutes = require('./util/UserRoutes').UserRoutes;
 
 // Managers
@@ -88,6 +89,8 @@ exports.PresenceManager = require('./managers/PresenceManager');
 exports.ReactionManager = require('./managers/ReactionManager');
 exports.ReactionUserManager = require('./managers/ReactionUserManager');
 exports.RelationshipManager = require('./managers/RelationshipManager');
+exports.SessionManager = require('./managers/SessionManager');
+exports.UserNoteManager = require('./managers/UserNoteManager');
 exports.RoleManager = require('./managers/RoleManager');
 exports.StageInstanceManager = require('./managers/StageInstanceManager');
 exports.SubscriptionManager = require('./managers/SubscriptionManager').SubscriptionManager;

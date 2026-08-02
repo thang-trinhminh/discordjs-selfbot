@@ -14,7 +14,9 @@ const BaseGuildEmojiManager = require('../managers/BaseGuildEmojiManager');
 const ChannelManager = require('../managers/ChannelManager');
 const GuildManager = require('../managers/GuildManager');
 const RelationshipManager = require('../managers/RelationshipManager');
+const SessionManager = require('../managers/SessionManager');
 const UserManager = require('../managers/UserManager');
+const UserNoteManager = require('../managers/UserNoteManager');
 const ShardClientUtil = require('../sharding/ShardClientUtil');
 const ClientPresence = require('../structures/ClientPresence');
 const GuildPreview = require('../structures/GuildPreview');
@@ -124,6 +126,18 @@ class Client extends BaseClient {
      * @type {RelationshipManager}
      */
     this.relationships = new RelationshipManager(this);
+
+    /**
+     * Login sessions of the client user across devices
+     * @type {SessionManager}
+     */
+    this.sessions = new SessionManager(this);
+
+    /**
+     * Private notes the client user wrote about other users
+     * @type {UserNoteManager}
+     */
+    this.notes = new UserNoteManager(this);
 
     /**
      * A manager of all the guilds the client is currently handling -

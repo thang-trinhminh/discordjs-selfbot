@@ -87,6 +87,7 @@
  * @property {string} ThreadMemberUpdate threadMemberUpdate
  * @property {string} ThreadUpdate threadUpdate
  * @property {string} TypingStart typingStart
+ * @property {string} UserNoteUpdate userNoteUpdate
  * @property {string} UserUpdate userUpdate
  * @property {string} VoiceChannelEffectSend voiceChannelEffectSend
  * @property {string} VoiceServerUpdate voiceServerUpdate
@@ -187,6 +188,7 @@ module.exports = {
   ThreadMemberUpdate: 'threadMemberUpdate',
   ThreadUpdate: 'threadUpdate',
   TypingStart: 'typingStart',
+  UserNoteUpdate: 'userNoteUpdate',
   UserUpdate: 'userUpdate',
   VoiceChannelEffectSend: 'voiceChannelEffectSend',
   VoiceServerUpdate: 'voiceServerUpdate',

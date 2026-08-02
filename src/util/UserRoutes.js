@@ -22,6 +22,31 @@ const UserRoutes = {
   relationship(userId) {
     return `/users/@me/relationships/${userId}`;
   },
+
+  /**
+   * Route ghi chú client user đặt cho một user khác.
+   * @param {Snowflake} userId Id của user được ghi chú
+   * @returns {string}
+   */
+  note(userId) {
+    return `/users/@me/notes/${userId}`;
+  },
+
+  /**
+   * Route danh sách phiên đăng nhập.
+   * @returns {string}
+   */
+  authSessions() {
+    return '/auth/sessions';
+  },
+
+  /**
+   * Route đăng xuất phiên từ xa.
+   * @returns {string}
+   */
+  authSessionsLogout() {
+    return '/auth/sessions/logout';
+  },
 };
 
 module.exports = { UserRoutes };

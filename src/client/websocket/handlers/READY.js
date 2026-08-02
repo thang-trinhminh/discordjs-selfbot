@@ -18,6 +18,8 @@ module.exports = (client, { d: data }, shard) => {
   }
 
   client.relationships._setup(data.relationships);
+  client.notes._reload(data.notes);
+  client.sessions.currentSessionIdHash = data.auth_session_id_hash ?? null;
 
   // User account không nhận `application` trong READY (chỉ bot mới có).
   if (data.application) {
