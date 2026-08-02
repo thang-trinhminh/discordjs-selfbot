@@ -5,11 +5,11 @@
   "main": "./src/index.js",
   "types": "./typings/index.d.ts",
   "scripts": {
-    "test": "node --test",
+    "test": "node --test && npm run test:typescript",
     "lint": "eslint --ext .js,.mjs src test scripts",
     "lint:fix": "eslint --ext .js,.mjs src test scripts --fix",
     "format": "prettier --write \"src/**/*.js\" \"test/**/*.js\"",
-    "test:typescript": "tsc --noEmit",
+    "test:typescript": "tsc --noEmit && tsd --files typings/index.test-d.ts && tsd --files typings/selfbot.test-d.ts",
     "smoke:login": "node scripts/smoke/login.mjs"
   },
   "files": [
@@ -24,7 +24,7 @@
     "@discordjs/builders": "^1.11.2",
     "@discordjs/collection": "1.5.3",
     "@discordjs/formatters": "^0.6.1",
-    "@discordjs/rest": "2.5.1",
+    "@discordjs/rest": "2.6.3",
     "@discordjs/util": "^1.1.1",
     "@discordjs/ws": "1.2.3",
     "@sapphire/snowflake": "3.5.5",
@@ -45,6 +45,7 @@
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-prettier": "^5.5.6",
     "prettier": "^3.9.6",
+    "tsd": "^0.32.0",
     "typescript": "^5.5.4"
   }
 }

@@ -31,4 +31,5 @@ Mọi sửa đổi lên file upstream phải ghi vào đây kèm lý do một d�
 | `src/structures/Guild.js` | Thêm manager `settings` (setting thông báo của client user cho guild) |
 | `src/util/Channels.js` | `createChannel` dựng `GroupDMChannel` thay `PartialGroupDMChannel` (user account dùng group DM đầy đủ) |
 | `src/util/Events.js` | Thêm `RelationshipAdd/Remove/Update`, `UserNoteUpdate`, `CallCreate/Update/Delete`, `ChannelRecipientAdd/Remove` |
+| `typings/index.d.ts` | `intents` thành optional; nối thêm khối `//#region Selfbot` ở cuối file dùng declaration merging, nên phần thêm không đụng vào nơi khai báo gốc |
 | `src/index.js` | Export phần selfbot: `RelationshipType`, `Session`, `UserRoutes`, các manager mới |

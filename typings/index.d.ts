@@ -6244,7 +6244,11 @@ export interface ClientOptions {
   partials?: readonly Partials[];
   failIfNotExists?: boolean;
   presence?: PresenceData;
-  intents: BitFieldResolvable<GatewayIntentsString, number>;
+  /**
+   * Không bắt buộc với tài khoản người dùng: gateway không nhận `intents` trong
+   * payload identify, mặc định là `0`.
+   */
+  intents?: BitFieldResolvable<GatewayIntentsString, number>;
   waitGuildTimeout?: number;
   sweepers?: SweeperOptions;
   ws?: WebSocketOptions;
@@ -8185,3 +8189,418 @@ export * from '@discordjs/ws';
 
 // Solve TS compile error
 export type { ImageSize };
+
+//#region Selfbot
+
+// Mọi khai báo riêng của selfbot nằm trong khối này. Phần thêm vào class và
+// interface sẵn có dùng declaration merging thay vì sửa tại chỗ, để lần sync
+// upstream tiếp theo chỉ đụng đúng một dòng (`intents` thành optional).
+
+export const RelationshipType: {
+  None: 0;
+  Friend: 1;
+  Blocked: 2;
+  PendingIncoming: 3;
+  PendingOutgoing: 4;
+  Implicit: 5;
+  Suggestion: 6;
+};
+
+export const HypeSquadHouse: {
+  Leave: 0;
+  Bravery: 1;
+  Brilliance: 2;
+  Balance: 3;
+};
+
+export const SamsungActivityAction: {
+  Start: 'START';
+  Update: 'UPDATE';
+  Stop: 'STOP';
+};
+
+export const UserRoutes: Record<string, (...args: string[]) => string>;
+
+export interface RelationshipJSONData {
+  id: Snowflake;
+  type: number;
+  nickname: string | null;
+  since: string | null;
+}
+
+export class RelationshipManager extends BaseManager {
+  public cache: Collection<Snowflake, number>;
+  public friendNicknames: Collection<Snowflake, string | null>;
+  public sinceCache: Collection<Snowflake, Date>;
+  public get friendCache(): Collection<Snowflake, User | undefined>;
+  public get blockedCache(): Collection<Snowflake, User | undefined>;
+  public get incomingCache(): Collection<Snowflake, User | undefined>;
+  public get outgoingCache(): Collection<Snowflake, User | undefined>;
+  public toJSON(): RelationshipJSONData[];
+  public resolveId(user: UserResolvable): Snowflake | null;
+  public fetch(): Promise<this>;
+  public fetch(user: UserResolvable): Promise<number | undefined>;
+  public setNickname(user: UserResolvable, nickname?: string | null): Promise<boolean>;
+}
+
+export interface SessionClientInfo {
+  location: string;
+  platform: string;
+  os: string;
+}
+
+export class Session extends Base {
+  public id: string;
+  public approxLastUsedTime: string;
+  public clientInfo: SessionClientInfo;
+  public get lastUsedAt(): Date;
+  public get lastUsedTimestamp(): number;
+  /** @deprecated Tên cũ của v13, dùng {@link Session.lastUsedAt} */
+  public get createdAt(): Date;
+  /** @deprecated Tên cũ của v13, dùng {@link Session.lastUsedTimestamp} */
+  public get createdTimestamp(): number;
+  public logout(): Promise<void>;
+}
+
+export class SessionManager extends CachedManager<string, Session, Session> {
+  public currentSessionIdHash: string | null;
+  public get currentSession(): Session | null;
+  public fetch(): Promise<Collection<string, Session>>;
+  public logoutAllDevices(): Promise<void>;
+}
+
+export class UserNoteManager extends BaseManager {
+  public cache: Collection<Snowflake, string>;
+  public resolveId(user: UserResolvable): Snowflake | null;
+  public updateNote(user: UserResolvable, note?: string | null): Promise<this>;
+  public fetch(user: UserResolvable, options?: BaseFetchOptions): Promise<string>;
+}
+
+export interface CustomStatusOptions {
+  text?: string | null;
+  status?: ClientPresenceStatus | 'invisible' | null;
+  emoji?: EmojiIdentifierResolvable | null;
+  expires?: number | null;
+}
+
+export class ClientUserSettingManager extends BaseManager {
+  public disableDMfromGuilds: Collection<Snowflake, Guild | null>;
+  public customStatus: unknown;
+  public locale: string | undefined;
+  public theme: string | undefined;
+  public activityDisplay: boolean | undefined;
+  public allowDMsFromGuild: boolean | undefined;
+  public displayImage: boolean | undefined;
+  public linkedImageDisplay: boolean | undefined;
+  public autoplayGIF: boolean | undefined;
+  public previewLink: boolean | undefined;
+  public animatedEmoji: boolean | undefined;
+  public allowTTS: boolean | undefined;
+  public compactMode: boolean | undefined;
+  public convertEmoticons: boolean | undefined;
+  public DMScanLevel: number | undefined;
+  public developerMode: boolean | undefined;
+  public afkTimeout: number | undefined;
+  public stickerAnimationMode: number | undefined;
+  public showEmojiReactions: boolean | undefined;
+  public get raw(): Record<string, unknown>;
+  public fetch(): Promise<this>;
+  public edit(data: Record<string, unknown>): Promise<this>;
+  public toggleCompactMode(): Promise<this>;
+  public setTheme(value: 'dark' | 'light'): Promise<this>;
+  public setCustomStatus(options: CustomStatus | CustomStatusOptions | null): Promise<this>;
+  public restrictedGuilds(status: boolean): Promise<this>;
+  public addRestrictedGuild(guild: GuildResolvable): Promise<this>;
+  public removeRestrictedGuild(guild: GuildResolvable): Promise<this>;
+}
+
+export interface GuildSettingMuteConfig {
+  endTime: Date;
+  selectedTimeWindow: number;
+}
+
+export class GuildSettingManager extends BaseManager {
+  public guildId: Snowflake;
+  public muteConfig: GuildSettingMuteConfig | null;
+  public suppressEveryone: boolean | undefined;
+  public suppressRoles: boolean | undefined;
+  public muteScheduledEvents: boolean | undefined;
+  public messageNotifications: number | undefined;
+  public flags: number | undefined;
+  public mobilePush: boolean | undefined;
+  public muted: boolean | undefined;
+  public hideMutedChannels: boolean | undefined;
+  public channelOverrides: unknown[] | undefined;
+  public notifyHighlights: number | undefined;
+  public version: number | undefined;
+  public get raw(): Record<string, unknown>;
+  public get guild(): Guild | null;
+  public edit(data: Record<string, unknown>): Promise<this>;
+}
+
+export class GuildBoost extends Base {
+  public id: Snowflake;
+  public subscriptionId: Snowflake;
+  public canceled: boolean;
+  public cooldownEndsAt: Date | null;
+  public premiumGuildSubscriptionId: Snowflake | null;
+  public guildId: Snowflake | null;
+  public ended: boolean | null;
+  public get guild(): Guild | null;
+  public get used(): boolean;
+  public subscribe(guild: GuildResolvable): Promise<this>;
+  public unsubscribe(): Promise<this>;
+}
+
+export class BillingManager extends BaseManager {
+  public paymentSources: Collection<Snowflake, unknown>;
+  public guildBoosts: Collection<Snowflake, GuildBoost>;
+  public currentSubscription: Collection<Snowflake, unknown>;
+  public fetchPaymentSources(): Promise<Collection<Snowflake, unknown>>;
+  public fetchGuildBoosts(): Promise<Collection<Snowflake, GuildBoost>>;
+  public fetchCurrentSubscription(): Promise<Collection<Snowflake, unknown>>;
+}
+
+export class CallState extends Base {
+  public channelId: Snowflake;
+  public region: string;
+  public get channel(): DMChannel | GroupDMChannel | null;
+  public get ringing(): Collection<Snowflake, User | null>;
+  public setRTCRegion(region: string): Promise<void>;
+}
+
+export interface GroupDMChannelEditOptions {
+  name?: string | null;
+  icon?: BufferResolvable | Base64Resolvable | null;
+  owner?: UserResolvable;
+}
+
+// Không khai `extends PartialGroupDMChannel` dù runtime kế thừa thật: upstream
+// đánh dấu constructor lớp đó `private`, và `recipients` của nó là mảng thô
+// trong khi ở đây là Collection. Kiểu kế thừa sẽ không hợp lệ, nên khai lại
+// các thành viên cần dùng.
+export class GroupDMChannel extends BaseChannel {
+  private constructor(client: Client<true>, data: unknown);
+  public type: ChannelType.GroupDM;
+  public flags: null;
+  public name: string | null;
+  public icon: string | null;
+  public ownerId: Snowflake | null;
+  public lastMessageId: Snowflake | null;
+  public lastPinTimestamp: number | null;
+  public messages: PartialGroupDMMessageManager;
+  public iconURL(options?: ImageURLOptions): string | null;
+  public fetchOwner(options?: BaseFetchOptions): Promise<User>;
+  public get recipients(): Collection<Snowflake, User>;
+  public get owner(): User | null;
+  public edit(options: GroupDMChannelEditOptions): Promise<this>;
+  public setName(name: string | null): Promise<this>;
+  public setIcon(icon: BufferResolvable | Base64Resolvable | null): Promise<this>;
+  public setOwner(user: UserResolvable): Promise<this>;
+  public addUser(user: UserResolvable): Promise<this>;
+  public removeUser(user: UserResolvable): Promise<this>;
+  public override delete(silent?: boolean): Promise<this>;
+  public createInvite(maxAge?: number, maxUses?: number): Promise<Invite>;
+  public fetchInvites(): Promise<Collection<string, Invite>>;
+  public deleteInvite(invite: InviteResolvable): Promise<this>;
+  public ring(recipients?: readonly UserResolvable[]): Promise<this>;
+  public send: TextBasedChannelFields<false>['send'];
+  public sendTyping: TextBasedChannelFields<false>['sendTyping'];
+  public createMessageCollector: TextBasedChannelFields<false>['createMessageCollector'];
+  public awaitMessages: TextBasedChannelFields<false>['awaitMessages'];
+}
+
+export abstract class BaseActivityBuilder {
+  public name: string;
+  public type: ActivityType;
+  public toJSON(): Record<string, unknown>;
+  public toString(): string;
+}
+
+export class CustomStatus extends BaseActivityBuilder {
+  public constructor(data?: { state?: string | null; emoji?: EmojiIdentifierResolvable | null });
+  public state: string | null;
+  public emoji: { id: Snowflake | null; name: string; animated: boolean } | null;
+  public setEmoji(emoji: EmojiIdentifierResolvable | null): this;
+  public setState(state: string | null): this;
+}
+
+export interface RichPresenceParty {
+  id?: string | null;
+  size: number;
+  max: number;
+}
+
+export interface ExternalAsset {
+  url: string;
+  external_asset_path: string;
+}
+
+export class RichPresence extends BaseActivityBuilder {
+  public constructor(data?: Record<string, unknown>);
+  public url: string | null;
+  public applicationId: Snowflake | null;
+  public state: string | null;
+  public details: string | null;
+  public platform: string | null;
+  public party: Record<string, unknown> | null;
+  public timestamps: { start?: number | null; end?: number | null } | null;
+  public assets: Record<string, string | null>;
+  public buttons: string[];
+  public metadata: Record<string, unknown>;
+  public secrets: Record<string, string | null>;
+  public setName(name: string | null): this;
+  public setType(type: ActivityType): this;
+  public setURL(url: string | null): this;
+  public setApplicationId(id: Snowflake | null): this;
+  public setState(state: string | null): this;
+  public setDetails(details: string | null): this;
+  public setPlatform(platform: string | null): this;
+  public setParty(party: RichPresenceParty | null): this;
+  public setStartTimestamp(timestamp: Date | number | null): this;
+  public setEndTimestamp(timestamp: Date | number | null): this;
+  public setAssetsLargeImage(image: string | null): this;
+  public setAssetsSmallImage(image: string | null): this;
+  public setAssetsLargeText(text: string | null): this;
+  public setAssetsSmallText(text: string | null): this;
+  public setJoinSecret(join: string | null): this;
+  public addButton(label: string, url: string): this;
+  public setButtons(...buttons: { label: string; url: string }[]): this;
+  public static getExternal(client: Client, applicationId: Snowflake, ...images: string[]): Promise<ExternalAsset[]>;
+}
+
+export class SpotifyRPC extends RichPresence {
+  public constructor(data?: Record<string, unknown>);
+  public songId: string | null;
+  public albumId: string | null;
+  public artistIds: string[];
+  public setSongId(id: string): this;
+  public setAlbumId(id: string): this;
+  public addArtistId(id: string): this;
+  public setArtistIds(...ids: string[]): this;
+}
+
+export class WebEmbed {
+  public constructor(data?: Record<string, unknown> & { baseURL?: string });
+  public baseURL: string;
+  public imageType: 'image' | 'thumbnail';
+  public title?: string;
+  public description?: string;
+  public url?: string;
+  public color?: number;
+  public author?: { name?: string; url?: string };
+  public provider?: { name?: string; url?: string };
+  public image?: { url: string } | null;
+  public thumbnail?: { url: string } | null;
+  public video?: { url: string };
+  public redirect?: string;
+  public setTitle(title: string): this;
+  public setDescription(description: string): this;
+  public setURL(url: string): this;
+  public setColor(color: ColorResolvable): this;
+  public setAuthor(options: { name: string; url?: string } | null): this;
+  public setProvider(options: { name: string; url?: string } | null): this;
+  public setImage(url: string): this;
+  public setThumbnail(url: string): this;
+  public setVideo(url: string): this;
+  public setRedirect(url: string): this;
+  public toString(): string;
+  public static hiddenEmbed: string;
+  public static DEFAULT_BASE_URL: string;
+}
+
+export interface AcceptInviteOptions {
+  bypassOnboarding?: boolean;
+  bypassVerify?: boolean;
+}
+
+export interface AuthorizedApplication {
+  application: Application;
+  authorizedApplicationId: Snowflake;
+  scopes: string[];
+  deauthorize(): Promise<void>;
+}
+
+export interface RefreshedAttachmentURL {
+  original: string;
+  refreshed: string;
+}
+
+// Declaration merging: thêm thành viên vào class có sẵn mà không sửa nơi khai báo.
+export interface Client<Ready extends boolean = boolean> {
+  relationships: RelationshipManager;
+  sessions: SessionManager;
+  notes: UserNoteManager;
+  settings: ClientUserSettingManager;
+  billing: BillingManager;
+  get sessionId(): string | null;
+  logout(): Promise<void>;
+  acceptInvite(invite: InviteResolvable, options?: AcceptInviteOptions): Promise<Guild | GroupDMChannel | null>;
+  redeemNitro(nitro: string, channel?: ChannelResolvable, paymentSourceId?: Snowflake): Promise<unknown>;
+  authorizeURL(url: string, options?: Record<string, unknown>): Promise<unknown>;
+  installUserApps(applicationId: Snowflake): Promise<unknown>;
+  deauthorize(id: Snowflake, type?: 'application' | 'token'): Promise<void>;
+  authorizedApplications(): Promise<Collection<Snowflake, AuthorizedApplication>>;
+  refreshAttachmentURL(...urls: string[]): Promise<RefreshedAttachmentURL[]>;
+}
+
+export interface ClientUser {
+  setGlobalName(globalName?: string | null): Promise<this>;
+  setPronouns(pronouns?: string | null): Promise<this>;
+  setAboutMe(bio?: string | null): Promise<this>;
+  setAccentColor(color?: ColorResolvable | null): Promise<this>;
+  setHypeSquad(house: number | 'Leave' | 'Bravery' | 'Brilliance' | 'Balance'): Promise<void>;
+  createFriendInvite(): Promise<Invite>;
+  fetchFriendInvites(): Promise<Collection<string, Invite>>;
+  revokeAllFriendInvites(): Promise<void>;
+  setSamsungActivity(packageName: string, action?: 'START' | 'UPDATE' | 'STOP'): Promise<this>;
+  stopRinging(channel: ChannelResolvable): Promise<void>;
+  fetchBurstCredit(): Promise<number>;
+}
+
+export interface Guild {
+  settings: GuildSettingManager;
+}
+
+export interface ClientUserEditOptions {
+  password?: string;
+  bio?: string | null;
+  pronouns?: string | null;
+  globalName?: string | null;
+  accentColor?: ColorResolvable | null;
+}
+
+export interface WebSocketOptions {
+  properties?: Record<string, unknown>;
+  capabilities?: number;
+  client_state?: Record<string, unknown>;
+}
+
+export interface ClientOptions {
+  http?: {
+    headers?: Record<string, string>;
+    agent?: string | Record<string, unknown> | null;
+  };
+  captchaSolver?: ((captcha: unknown, userAgent: string) => Promise<string>) | null;
+  captchaRetryLimit?: number;
+}
+
+export interface RelationshipUpdateData {
+  type: number | null;
+  nickname: string | null;
+  since: Date | null;
+}
+
+export interface ClientEvents {
+  relationshipAdd: [userId: Snowflake, shouldNotify: boolean];
+  relationshipRemove: [userId: Snowflake, type: number, nickname: string | null];
+  relationshipUpdate: [userId: Snowflake, oldData: RelationshipUpdateData, newData: RelationshipUpdateData];
+  userNoteUpdate: [userId: Snowflake, oldNote: string | null, newNote: string | null];
+  callCreate: [call: CallState];
+  callUpdate: [call: CallState];
+  callDelete: [call: CallState];
+  channelRecipientAdd: [channel: GroupDMChannel, user: User];
+  channelRecipientRemove: [channel: GroupDMChannel, user: User];
+}
+
+//#endregion
