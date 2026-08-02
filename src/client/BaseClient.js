@@ -1,7 +1,7 @@
 'use strict';
 
 const EventEmitter = require('node:events');
-const { REST } = require('@discordjs/rest');
+const { createSelfbotREST } = require('../rest/SelfbotREST');
 const { Routes } = require('discord-api-types/v10');
 const { DiscordjsTypeError, ErrorCodes } = require('../errors');
 const Options = require('../util/Options');
@@ -52,7 +52,7 @@ class BaseClient extends EventEmitter {
      * The REST manager of the client
      * @type {REST}
      */
-    this.rest = new REST(this.options.rest);
+    this.rest = createSelfbotREST(this.options);
   }
 
   /**
