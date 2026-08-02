@@ -5,6 +5,7 @@ const { Collection } = require('@discordjs/collection');
 const { makeURLSearchParams } = require('@discordjs/rest');
 const { OAuth2Scopes, Routes } = require('discord-api-types/v10');
 const BaseClient = require('./BaseClient');
+const ClientActions = require('./ClientActions');
 const ActionsManager = require('./actions/ActionsManager');
 const ClientVoiceManager = require('./voice/ClientVoiceManager');
 const { SelfbotShardingStrategy } = require('./websocket/SelfbotShardingStrategy');
@@ -621,6 +622,9 @@ class Client extends BaseClient {
     }
   }
 }
+
+// Trộn các thao tác chỉ tài khoản người dùng mới có. Xem ClientActions.js.
+Object.defineProperties(Client.prototype, Object.getOwnPropertyDescriptors(ClientActions));
 
 module.exports = Client;
 

@@ -101,6 +101,84 @@ const UserRoutes = {
   },
 
   /**
+   * Route đăng xuất.
+   * @returns {string}
+   */
+  authLogout() {
+    return '/auth/logout';
+  },
+
+  /**
+   * Route trả lời onboarding của một guild.
+   * @param {Snowflake} guildId Id của guild
+   * @returns {string}
+   */
+  guildOnboardingResponses(guildId) {
+    return `/guilds/${guildId}/onboarding-responses`;
+  },
+
+  /**
+   * Route bản quy tắc thành viên của guild.
+   * @param {Snowflake} guildId Id của guild
+   * @returns {string}
+   */
+  guildMemberVerification(guildId) {
+    return `/guilds/${guildId}/member-verification`;
+  },
+
+  /**
+   * Route đơn xin vào guild của client user.
+   * @param {Snowflake} guildId Id của guild
+   * @returns {string}
+   */
+  guildJoinRequest(guildId) {
+    return `/guilds/${guildId}/requests/@me`;
+  },
+
+  /**
+   * Route nhận quà Nitro.
+   * @param {string} code Mã quà
+   * @returns {string}
+   */
+  redeemGiftCode(code) {
+    return `/entitlements/gift-codes/${code}/redeem`;
+  },
+
+  /**
+   * Route danh sách quyền OAuth2 đã cấp.
+   * @returns {string}
+   */
+  oauth2Tokens() {
+    return '/oauth2/tokens';
+  },
+
+  /**
+   * Route một bản cấp quyền OAuth2 cụ thể.
+   * @param {Snowflake} tokenId Id của bản cấp quyền
+   * @returns {string}
+   */
+  oauth2Token(tokenId) {
+    return `/oauth2/tokens/${tokenId}`;
+  },
+
+  /**
+   * Route thông tin công khai của một application.
+   * @param {Snowflake} applicationId Id của application
+   * @returns {string}
+   */
+  applicationPublic(applicationId) {
+    return `/applications/${applicationId}/public`;
+  },
+
+  /**
+   * Route làm mới link đính kèm.
+   * @returns {string}
+   */
+  refreshAttachmentUrls() {
+    return '/attachments/refresh-urls';
+  },
+
+  /**
    * Route setting tài khoản của client user.
    * @returns {string}
    */
