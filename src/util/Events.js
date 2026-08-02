@@ -71,6 +71,9 @@
  * @property {string} ShardReady shardReady
  * @property {string} ShardReconnecting shardReconnecting
  * @property {string} ShardResume shardResume
+ * @property {string} RelationshipAdd relationshipAdd
+ * @property {string} RelationshipRemove relationshipRemove
+ * @property {string} RelationshipUpdate relationshipUpdate
  * @property {string} StageInstanceCreate stageInstanceCreate
  * @property {string} StageInstanceDelete stageInstanceDelete
  * @property {string} StageInstanceUpdate stageInstanceUpdate
@@ -168,6 +171,9 @@ module.exports = {
   ShardReady: 'shardReady',
   ShardReconnecting: 'shardReconnecting',
   ShardResume: 'shardResume',
+  RelationshipAdd: 'relationshipAdd',
+  RelationshipRemove: 'relationshipRemove',
+  RelationshipUpdate: 'relationshipUpdate',
   StageInstanceCreate: 'stageInstanceCreate',
   StageInstanceDelete: 'stageInstanceDelete',
   StageInstanceUpdate: 'stageInstanceUpdate',

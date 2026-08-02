@@ -51,6 +51,8 @@ exports.UserFlagsBitField = require('./util/UserFlagsBitField');
 __exportStar(require('./util/Util.js'), exports);
 exports.WebSocketShardEvents = require('./util/WebSocketShardEvents');
 exports.version = require('../package.json').version;
+exports.RelationshipType = require('./util/UserEnums').RelationshipType;
+exports.UserRoutes = require('./util/UserRoutes').UserRoutes;
 
 // Managers
 exports.ApplicationCommandManager = require('./managers/ApplicationCommandManager');
@@ -85,6 +87,7 @@ exports.PollAnswerVoterManager = require('./managers/PollAnswerVoterManager.js')
 exports.PresenceManager = require('./managers/PresenceManager');
 exports.ReactionManager = require('./managers/ReactionManager');
 exports.ReactionUserManager = require('./managers/ReactionUserManager');
+exports.RelationshipManager = require('./managers/RelationshipManager');
 exports.RoleManager = require('./managers/RoleManager');
 exports.StageInstanceManager = require('./managers/StageInstanceManager');
 exports.SubscriptionManager = require('./managers/SubscriptionManager').SubscriptionManager;
