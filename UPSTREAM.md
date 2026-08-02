@@ -23,7 +23,7 @@ Mọi sửa đổi lên file upstream phải ghi vào đây kèm lý do một d�
 |---|---|
 | `src/client/BaseClient.js` | Dùng `createSelfbotREST()` thay `new REST()` |
 | `src/util/Options.js` | Thêm default cho user account: `intents: 0`, `ws.properties`, `ws.capabilities`, `ws.client_state`, `ws.buildStrategy`, `http`, `captchaSolver`, `captchaRetryLimit` |
-| `src/client/Client.js` | Cắm `SelfbotShardingStrategy` vào `options.ws.buildStrategy`; thêm manager `relationships`, `sessions`, `notes`, `settings`; trộn `ClientActions` vào prototype (một dòng) |
+| `src/client/Client.js` | Cắm `SelfbotShardingStrategy` vào `options.ws.buildStrategy`; thêm manager `relationships`, `sessions`, `notes`, `settings`, `billing`; trộn `ClientActions` vào prototype (một dòng) |
 | `src/client/websocket/handlers/index.js` | Đăng ký handler `RELATIONSHIP_*`, `USER_NOTE_UPDATE`, `USER_SETTINGS_UPDATE`, `USER_GUILD_SETTINGS_UPDATE`, `CALL_*`, `CHANNEL_RECIPIENT_*` |
 | `src/client/websocket/handlers/READY.js` | Guard `data.application` (user token không nhận field này); seed relationships, notes, session hash, user settings, guild settings |
 | `src/structures/ClientPresence.js` | `_parse` đẩy nguyên payload của builder selfbot và giữ `emoji`; upstream chỉ giữ `type/name/state/url` vì bot không phát được emoji, asset, button, party |

@@ -57,9 +57,11 @@ exports.SamsungActivityAction = require('./util/UserEnums').SamsungActivityActio
 exports.CallState = require('./structures/CallState');
 exports.CustomStatus = require('./structures/RichPresence').CustomStatus;
 exports.GroupDMChannel = require('./structures/GroupDMChannel');
+exports.GuildBoost = require('./structures/GuildBoost');
 exports.RichPresence = require('./structures/RichPresence').RichPresence;
 exports.Session = require('./structures/Session');
 exports.SpotifyRPC = require('./structures/RichPresence').SpotifyRPC;
+exports.WebEmbed = require('./structures/WebEmbed');
 exports.UserRoutes = require('./util/UserRoutes').UserRoutes;
 
 // Managers
@@ -95,6 +97,7 @@ exports.PollAnswerVoterManager = require('./managers/PollAnswerVoterManager.js')
 exports.PresenceManager = require('./managers/PresenceManager');
 exports.ReactionManager = require('./managers/ReactionManager');
 exports.ReactionUserManager = require('./managers/ReactionUserManager');
+exports.BillingManager = require('./managers/BillingManager');
 exports.ClientUserSettingManager = require('./managers/ClientUserSettingManager');
 exports.GuildSettingManager = require('./managers/GuildSettingManager');
 exports.RelationshipManager = require('./managers/RelationshipManager');

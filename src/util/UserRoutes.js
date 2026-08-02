@@ -179,6 +179,49 @@ const UserRoutes = {
   },
 
   /**
+   * Route nguồn thanh toán đã lưu.
+   * @returns {string}
+   */
+  billingPaymentSources() {
+    return '/users/@me/billing/payment-sources';
+  },
+
+  /**
+   * Route các gói đăng ký đang hoạt động.
+   * @returns {string}
+   */
+  billingSubscriptions() {
+    return '/users/@me/billing/subscriptions';
+  },
+
+  /**
+   * Route các suất boost client user đang sở hữu.
+   * @returns {string}
+   */
+  premiumSubscriptionSlots() {
+    return '/users/@me/guilds/premium/subscription-slots';
+  },
+
+  /**
+   * Route các bản ghi boost của một guild.
+   * @param {Snowflake} guildId Id của guild
+   * @returns {string}
+   */
+  guildPremiumSubscriptions(guildId) {
+    return `/guilds/${guildId}/premium/subscriptions`;
+  },
+
+  /**
+   * Route một bản ghi boost cụ thể của guild.
+   * @param {Snowflake} guildId Id của guild
+   * @param {Snowflake} subscriptionId Id của bản ghi boost
+   * @returns {string}
+   */
+  guildPremiumSubscription(guildId, subscriptionId) {
+    return `/guilds/${guildId}/premium/subscriptions/${subscriptionId}`;
+  },
+
+  /**
    * Route setting tài khoản của client user.
    * @returns {string}
    */

@@ -12,6 +12,7 @@ const { SelfbotShardingStrategy } = require('./websocket/SelfbotShardingStrategy
 const WebSocketManager = require('./websocket/WebSocketManager');
 const { DiscordjsError, DiscordjsTypeError, DiscordjsRangeError, ErrorCodes } = require('../errors');
 const BaseGuildEmojiManager = require('../managers/BaseGuildEmojiManager');
+const BillingManager = require('../managers/BillingManager');
 const ChannelManager = require('../managers/ChannelManager');
 const ClientUserSettingManager = require('../managers/ClientUserSettingManager');
 const GuildManager = require('../managers/GuildManager');
@@ -146,6 +147,12 @@ class Client extends BaseClient {
      * @type {ClientUserSettingManager}
      */
     this.settings = new ClientUserSettingManager(this);
+
+    /**
+     * Billing information and guild boosts of the client user
+     * @type {BillingManager}
+     */
+    this.billing = new BillingManager(this);
 
     /**
      * A manager of all the guilds the client is currently handling -
