@@ -20,6 +20,11 @@ module.exports = (client, { d: data }, shard) => {
   client.relationships._setup(data.relationships);
   client.notes._reload(data.notes);
   client.sessions.currentSessionIdHash = data.auth_session_id_hash ?? null;
+  client.settings._patch(data.user_settings);
+
+  for (const guildSetting of data.user_guild_settings ?? []) {
+    client.guilds.cache.get(guildSetting.guild_id)?.settings._patch(guildSetting);
+  }
 
   // User account không nhận `application` trong READY (chỉ bot mới có).
   if (data.application) {

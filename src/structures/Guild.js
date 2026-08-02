@@ -21,6 +21,7 @@ const GuildEmojiManager = require('../managers/GuildEmojiManager');
 const GuildInviteManager = require('../managers/GuildInviteManager');
 const GuildMemberManager = require('../managers/GuildMemberManager');
 const GuildScheduledEventManager = require('../managers/GuildScheduledEventManager');
+const GuildSettingManager = require('../managers/GuildSettingManager');
 const { GuildSoundboardSoundManager } = require('../managers/GuildSoundboardSoundManager');
 const GuildStickerManager = require('../managers/GuildStickerManager');
 const PresenceManager = require('../managers/PresenceManager');
@@ -48,6 +49,12 @@ class Guild extends AnonymousGuild {
      * @type {GuildApplicationCommandManager}
      */
     this.commands = new GuildApplicationCommandManager(this);
+
+    /**
+     * Notification settings of the client user for this guild
+     * @type {GuildSettingManager}
+     */
+    this.settings = new GuildSettingManager(this);
 
     /**
      * A manager of the members belonging to this guild

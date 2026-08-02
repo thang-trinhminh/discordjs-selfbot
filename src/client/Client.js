@@ -12,6 +12,7 @@ const WebSocketManager = require('./websocket/WebSocketManager');
 const { DiscordjsError, DiscordjsTypeError, DiscordjsRangeError, ErrorCodes } = require('../errors');
 const BaseGuildEmojiManager = require('../managers/BaseGuildEmojiManager');
 const ChannelManager = require('../managers/ChannelManager');
+const ClientUserSettingManager = require('../managers/ClientUserSettingManager');
 const GuildManager = require('../managers/GuildManager');
 const RelationshipManager = require('../managers/RelationshipManager');
 const SessionManager = require('../managers/SessionManager');
@@ -138,6 +139,12 @@ class Client extends BaseClient {
      * @type {UserNoteManager}
      */
     this.notes = new UserNoteManager(this);
+
+    /**
+     * Account settings of the client user
+     * @type {ClientUserSettingManager}
+     */
+    this.settings = new ClientUserSettingManager(this);
 
     /**
      * A manager of all the guilds the client is currently handling -

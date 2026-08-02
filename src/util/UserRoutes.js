@@ -33,6 +33,23 @@ const UserRoutes = {
   },
 
   /**
+   * Route setting tài khoản của client user.
+   * @returns {string}
+   */
+  settings() {
+    return '/users/@me/settings';
+  },
+
+  /**
+   * Route setting thông báo của client user cho một guild.
+   * @param {Snowflake} guildId Id của guild
+   * @returns {string}
+   */
+  guildSettings(guildId) {
+    return `/users/@me/guilds/${guildId}/settings`;
+  },
+
+  /**
    * Route danh sách phiên đăng nhập.
    * @returns {string}
    */
