@@ -69,6 +69,12 @@ Kiểm tra nền tảng bằng token thật:
 DISCORD_TOKEN='...' npm run smoke:login
 ```
 
+## Ví dụ
+
+Thư mục [`examples/`](./examples) có 9 script chạy được: đăng nhập bằng token,
+QR và mật khẩu; rich presence; gọi slash command; group DM và cuộc gọi;
+WebEmbed; proxy; voice.
+
 ## Chuyển từ v13
 
 Lớp tương thích bật mặc định nên phần lớn code cũ chạy ngay. Phần phải sửa và
@@ -115,4 +121,5 @@ upstream là phương án cuối, và phải ghi vào bảng trong `UPSTREAM.md`
 
 ## Giấy phép
 
-Apache-2.0, theo discord.js.
+Apache-2.0, theo discord.js. Xem [`LICENSE`](./LICENSE) và [`NOTICE`](./NOTICE)
+để biết phần ghi công cho tác phẩm gốc.
