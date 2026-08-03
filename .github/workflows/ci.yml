@@ -61,3 +61,21 @@ jobs:
           diff -rq /tmp/base/packages/discord.js/src src | grep '^Files' | sed 's|.*/src/|  src/|; s| and .*||' || true
           echo
           echo "Doi chieu voi bang trong UPSTREAM.md."
+
+  codeql:
+    # Dùng config ở .github/codeql/codeql-config.yml: loại trừ thư mục test khỏi
+    # query hardcoded-credentials, vì ở đó toàn giá trị giả. src/ vẫn quét đủ.
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - uses: github/codeql-action/analyze@v3

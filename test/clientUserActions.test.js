@@ -13,6 +13,8 @@ function makeClient() {
   return client;
 }
 
+// Giá trị giả, cố tình đặt trong ngoặc nhọn để không máy quét nào nhầm là
+// credential thật.
 function captureEdit(client) {
   const calls = [];
   client.rest.patch = async (route, options) => {
@@ -26,13 +28,18 @@ test('edit giu lai field rieng cua tai khoan nguoi dung', async () => {
   const client = makeClient();
   const calls = captureEdit(client);
 
-  await client.user.edit({ username: 'ten-moi', password: 'matkhau', bio: 'gioi thieu', pronouns: 'they/them' });
+  await client.user.edit({
+    username: 'ten-moi',
+    password: '<mat-khau-gia-cho-test>',
+    bio: 'gioi thieu',
+    pronouns: 'they/them',
+  });
 
   // Upstream destructure đúng { username, avatar, banner } nên password, bio,
   // pronouns bị vứt im lặng.
   assert.deepStrictEqual(calls[0][1], {
     username: 'ten-moi',
-    password: 'matkhau',
+    password: '<mat-khau-gia-cho-test>',
     bio: 'gioi thieu',
     pronouns: 'they/them',
   });
@@ -56,8 +63,8 @@ test('setUsername gui kem password', async () => {
   const client = makeClient();
   const calls = captureEdit(client);
 
-  await client.user.setUsername('ten-moi', 'matkhau');
-  assert.deepStrictEqual(calls[0], ['/users/@me', { username: 'ten-moi', password: 'matkhau' }]);
+  await client.user.setUsername('ten-moi', '<mat-khau-gia-cho-test>');
+  assert.deepStrictEqual(calls[0], ['/users/@me', { username: 'ten-moi', password: '<mat-khau-gia-cho-test>' }]);
 
   client.destroy();
 });
