@@ -45,6 +45,17 @@ tài khoản người dùng, thay cho
 > khoá được phần thuần tuý: bảng codec, dựng SDP, bitfield, và các chỗ v13 dùng
 > chuỗi enum mà v14 dùng số. Coi phần này là "đã port", không phải "đã chạy".
 
+## Tài liệu
+
+| Ở đâu                                    | Nội dung                                                                          |
+| ---------------------------------------- | --------------------------------------------------------------------------------- |
+| [`docs/API.vi.md`](./docs/API.vi.md)     | Toàn bộ phần fork thêm vào, theo nhóm, kèm trạng thái tested/unit/ported từng mục |
+| [`MIGRATION.vi.md`](./MIGRATION.vi.md)   | Chuyển code từ `discord.js-selfbot-v13`, và codemod                               |
+| [`UPSTREAM.vi.md`](./UPSTREAM.vi.md)     | File upstream nào bị sửa, vì sao, và cách nâng cấp                                |
+| [`examples/`](./examples)                | 9 script chạy được                                                                |
+| [`scripts/smoke/`](./scripts/smoke)      | Kiểm tra bằng token thật, và log các lần chạy trước                               |
+| [discord.js.dev](https://discord.js.dev) | Mọi thứ không thuộc selfbot — giữ nguyên từ upstream                              |
+
 ## Cài đặt
 
 Cần Node.js 20.18 trở lên.
