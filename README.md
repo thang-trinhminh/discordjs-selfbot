@@ -25,7 +25,7 @@ tài khoản người dùng, thay cho
 | TypeScript | xong |
 | Gửi interaction với tư cách user | xong |
 | Voice / video / Go Live | đã port, **chưa chứng minh** (xem ghi chú) |
-| Đăng nhập QR, đăng nhập mật khẩu | chưa |
+| Đăng nhập QR, đăng nhập mật khẩu (kèm 2FA) | xong |
 
 > [!IMPORTANT]
 > **Chưa chạy thử với token thật lần nào.** Toàn bộ kiểm thử hiện tại là unit

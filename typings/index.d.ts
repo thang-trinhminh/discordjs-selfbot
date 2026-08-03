@@ -8564,6 +8564,8 @@ export interface Client<Ready extends boolean = boolean> {
   billing: BillingManager;
   get sessionId(): string | null;
   logout(): Promise<void>;
+  passLogin(login: string, password: string, options?: PassLoginOptions): Promise<string>;
+  QRLogin(options?: { printQR?: boolean }): Promise<string>;
   acceptInvite(invite: InviteResolvable, options?: AcceptInviteOptions): Promise<Guild | GroupDMChannel | null>;
   redeemNitro(nitro: string, channel?: ChannelResolvable, paymentSourceId?: Snowflake): Promise<unknown>;
   authorizeURL(url: string, options?: Record<string, unknown>): Promise<unknown>;
@@ -8614,6 +8616,53 @@ export interface ClientOptions {
   captchaRetryLimit?: number;
   /** Tự chấp nhận Điều khoản dịch vụ và Chính sách quyền riêng tư mới. Mặc định `false`. */
   autoAcceptAgreements?: boolean;
+}
+
+export interface RemoteAuthUser {
+  id: Snowflake;
+  discriminator: string;
+  avatar: string | null;
+  username: string;
+}
+
+export interface RemoteAuthOptions {
+  rest?: REST;
+  createSocket?: (url: string) => unknown;
+}
+
+export interface RemoteAuthEvents {
+  ready: [];
+  pending: [user: RemoteAuthUser];
+  finish: [token: string];
+  cancel: [];
+  closed: [];
+  error: [error: Error];
+  debug: [message: string];
+}
+
+export class RemoteAuth extends EventEmitter {
+  public constructor(options?: RemoteAuthOptions);
+  public on<Event extends keyof RemoteAuthEvents>(
+    event: Event,
+    listener: (...args: RemoteAuthEvents[Event]) => void,
+  ): this;
+  public once<Event extends keyof RemoteAuthEvents>(
+    event: Event,
+    listener: (...args: RemoteAuthEvents[Event]) => void,
+  ): this;
+  public fingerprint: string | null;
+  public user: RemoteAuthUser | null;
+  public expiresAt: Date | null;
+  public get qrCodeURL(): string | null;
+  public connect(client?: Client): Promise<string>;
+  public destroy(): void;
+  public generateQR(): Promise<string>;
+}
+
+export interface PassLoginOptions {
+  mfaSecret?: string | null;
+  mfaCode?: () => Promise<string>;
+  login?: boolean;
 }
 
 export interface ApplicationCommandSearchOptions {

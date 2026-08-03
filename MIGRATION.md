@@ -143,7 +143,17 @@ Toàn bộ phần selfbot đã có khai báo type: `client.relationships`, `.set
 `.sessions`, `.notes`, `.billing`, cùng `WebEmbed`, `CustomStatus`,
 `RichPresence`, `SpotifyRPC`, `Session`, `CallState`, `GuildBoost`.
 
-## 6. Chưa có
+## 6. Đăng nhập
 
-`RemoteAuth` (đăng nhập bằng QR) và `passLogin`. Xem `docs/superpowers/specs/`
-để biết kế hoạch.
+Ngoài token, giờ có thêm hai cách:
+
+```js
+// Quét mã QR bằng ứng dụng Discord trên điện thoại
+await client.QRLogin();
+
+// Email và mật khẩu, tự sinh mã 2FA từ secret base32
+await client.passLogin('a@b.vn', 'mat-khau', { mfaSecret: 'BASE32SECRET' });
+```
+
+`passLogin` rủi ro hơn dùng token: Discord soi kỹ đăng nhập bằng mật khẩu và hay
+chặn bằng captcha. Cấu hình `captchaSolver` trước nếu cần.

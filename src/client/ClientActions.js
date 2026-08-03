@@ -95,6 +95,70 @@ const ClientActions = {
   },
 
   /**
+   * @typedef {Object} PassLoginOptions
+   * @property {?string} [mfaSecret] Secret 2FA dạng base32, để tự sinh mã khi Discord hỏi
+   * @property {?Function} [mfaCode] Hàm bất đồng bộ trả về mã 2FA, dùng khi không có secret
+   * @property {boolean} [login=true] Đăng nhập luôn client bằng token lấy được
+   */
+
+  /**
+   * Đăng nhập bằng email và mật khẩu.
+   *
+   * <warn>Cách này rủi ro hơn dùng token: Discord soi kỹ đăng nhập bằng mật khẩu
+   * và hay chặn bằng captcha. Cấu hình `captchaSolver` trước nếu cần.</warn>
+   * @param {string} login Email hoặc số điện thoại
+   * @param {string} password Mật khẩu
+   * @param {PassLoginOptions} [options={}] Tuỳ chọn
+   * @returns {Promise<string>} Token của tài khoản
+   */
+  async passLogin(login, password, options = {}) {
+    const { generateTOTP } = require('../util/totp');
+    const { mfaSecret, mfaCode, login: shouldLogin = true } = options;
+
+    const response = await this.rest.post(UserRoutes.authLogin(), {
+      body: { login, password, undelete: false, login_source: null, gift_code_sku_id: null },
+    });
+
+    let { token } = response;
+
+    if (!token && response.mfa) {
+      if (!mfaSecret && !mfaCode) {
+        throw new Error('This account has two-factor authentication; pass mfaSecret or mfaCode');
+      }
+
+      const code = mfaSecret ? generateTOTP(mfaSecret) : await mfaCode();
+      ({ token } = await this.rest.post(UserRoutes.authMfaTotp(), { body: { code, ticket: response.ticket } }));
+    }
+
+    if (!token) throw new Error('Discord did not return a token; check the response for a required action');
+
+    if (shouldLogin) await this.login(token);
+    return token;
+  },
+
+  /**
+   * Đăng nhập bằng cách quét mã QR trên ứng dụng Discord ở điện thoại.
+   * @param {Object} [options={}] Tuỳ chọn
+   * @param {boolean} [options.printQR=true] In mã QR ra terminal
+   * @returns {Promise<string>} Token của tài khoản
+   */
+  async QRLogin({ printQR = true } = {}) {
+    const { RemoteAuth } = require('../util/RemoteAuth');
+    const auth = new RemoteAuth({ rest: this.rest });
+
+    auth.on('debug', message => this.emit(Events.Debug, `[REMOTE AUTH] ${message}`));
+    if (printQR) {
+      auth.once('ready', async () => {
+        this.emit(Events.Debug, `[REMOTE AUTH] ${auth.qrCodeURL}`);
+        // eslint-disable-next-line no-console
+        console.log(await auth.generateQR());
+      });
+    }
+
+    return auth.connect(this);
+  },
+
+  /**
    * Đăng xuất khỏi Discord rồi huỷ client.
    * @returns {Promise<void>}
    */

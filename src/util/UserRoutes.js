@@ -109,6 +109,30 @@ const UserRoutes = {
   },
 
   /**
+   * Route đăng nhập bằng email và mật khẩu.
+   * @returns {string}
+   */
+  authLogin() {
+    return '/auth/login';
+  },
+
+  /**
+   * Route xác thực hai lớp bằng mã TOTP.
+   * @returns {string}
+   */
+  authMfaTotp() {
+    return '/auth/mfa/totp';
+  },
+
+  /**
+   * Route đổi ticket của phiên quét QR lấy token.
+   * @returns {string}
+   */
+  remoteAuthLogin() {
+    return '/users/@me/remote-auth/login';
+  },
+
+  /**
    * Route đăng xuất.
    * @returns {string}
    */
