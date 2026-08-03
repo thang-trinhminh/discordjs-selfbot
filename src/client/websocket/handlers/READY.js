@@ -22,8 +22,16 @@ module.exports = (client, { d: data }, shard) => {
   client.sessions.currentSessionIdHash = data.auth_session_id_hash ?? null;
   client.settings._patch(data.user_settings);
 
-  for (const guildSetting of data.user_guild_settings ?? []) {
-    client.guilds.cache.get(guildSetting.guild_id)?.settings._patch(guildSetting);
+  // Discord gửi `user_guild_settings` dạng `{ version, partial, entries }`, nhưng
+  // client cũ (và một số session) nhận thẳng mảng. Chấp nhận cả hai.
+  // Phải thử Array.isArray trước: mảng cũng có `.entries` (là Array.prototype.entries).
+  const guildSettings = Array.isArray(data.user_guild_settings)
+    ? data.user_guild_settings
+    : data.user_guild_settings?.entries;
+  if (Array.isArray(guildSettings)) {
+    for (const guildSetting of guildSettings) {
+      client.guilds.cache.get(guildSetting.guild_id)?.settings._patch(guildSetting);
+    }
   }
 
   // User account không nhận `application` trong READY (chỉ bot mới có).

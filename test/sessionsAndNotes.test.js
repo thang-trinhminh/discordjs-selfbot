@@ -187,3 +187,35 @@ test('READY nap notes va session hash', () => {
 
   client.destroy();
 });
+
+test('READY chiu duoc user_guild_settings ca dang object lan dang mang', () => {
+  const ready = require('../src/client/websocket/handlers/READY.js');
+  const base = {
+    user: { id: '10', username: 'me', discriminator: '0', global_name: 'me' },
+    guilds: [],
+    notes: {},
+  };
+
+  const entries = [{ guild_id: '1', muted: true }];
+
+  // Dang that Discord tra ve hom nay la object bao ngoai, khong iterable. Dang mang
+  // tran van phai chay: mang cung co `.entries` nen nhanh nay de bi nuot nham.
+  for (const [userGuildSettings, patched] of [
+    [{ version: 1, partial: false, entries }, true],
+    [entries, true],
+    [undefined, false],
+  ]) {
+    const client = new Client({});
+    const { Guild } = require('../src/structures/Guild.js');
+    client.guilds.cache.set('1', new Guild(client, { id: '1', unavailable: false }));
+
+    const label = JSON.stringify(userGuildSettings ?? null);
+    assert.doesNotThrow(
+      () => ready(client, { d: { ...base, user_guild_settings: userGuildSettings } }, { id: 0, checkReady() {} }),
+      label,
+    );
+    assert.strictEqual(client.guilds.cache.get('1').settings.muted, patched ? true : undefined, label);
+
+    client.destroy();
+  }
+});
