@@ -247,6 +247,15 @@ const UserRoutes = {
   },
 
   /**
+   * Route xin chỗ upload file cho một kênh.
+   * @param {Snowflake} channelId Id của kênh
+   * @returns {string}
+   */
+  channelAttachments(channelId) {
+    return `/channels/${channelId}/attachments`;
+  },
+
+  /**
    * Route setting tài khoản của client user.
    * @returns {string}
    */

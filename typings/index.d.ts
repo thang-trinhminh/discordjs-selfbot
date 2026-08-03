@@ -8622,6 +8622,18 @@ export interface ApplicationCommandSearchOptions {
   applicationId?: Snowflake;
 }
 
+export interface UploadSlot {
+  id: string;
+  upload_url: string;
+  upload_filename: string;
+}
+
+export function requestUploadSlots(
+  client: Client,
+  channelId: Snowflake,
+  files: readonly { name: string; data: Buffer | Uint8Array }[],
+): Promise<UploadSlot[]>;
+
 export interface ChannelInteractionActions {
   searchApplicationCommands(options?: ApplicationCommandSearchOptions): Promise<unknown>;
   sendSlash(bot: UserResolvable, commandName: string, ...args: unknown[]): Promise<Message | unknown>;

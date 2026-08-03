@@ -1,6 +1,7 @@
 'use strict';
 
 const { ApplicationCommandOptionType } = require('discord-api-types/v10');
+const { uploadInteractionAttachment } = require('../util/AttachmentUpload');
 const { buildCommandInteraction, createNonce, sendInteraction } = require('../util/InteractionSender');
 const { UserRoutes } = require('../util/UserRoutes');
 
@@ -22,19 +23,24 @@ function findSubcommand(options, name, type) {
 /**
  * Đổi giá trị người dùng truyền vào thành option của API.
  *
- * Chỉ xử lý các loại giá trị vô hướng. Option kiểu attachment cần upload file
- * trước rồi tham chiếu theo chỉ số — chưa làm, truyền vào sẽ báo lỗi rõ ràng
- * thay vì gửi payload sai lên Discord.
+ * Option kiểu attachment phải upload file trước; giá trị gửi lên là chỉ số của
+ * file trong `data.attachments`, không phải bản thân file.
+ * @param {Client} client Client đã đăng nhập
+ * @param {Snowflake} channelId Kênh sẽ gửi lệnh
  * @param {Object} definition Định nghĩa option lấy từ Discord
  * @param {*} value Giá trị người dùng truyền
- * @returns {Object}
+ * @param {Array} attachments Danh sách file đã upload, hàm này nối thêm vào
+ * @returns {Promise<Object>}
  */
-function buildOption(definition, value) {
-  if (definition.type === ApplicationCommandOptionType.Attachment) {
-    throw new Error(`Option "${definition.name}" is an attachment option, which is not supported yet`);
+async function buildOption(client, channelId, definition, value, attachments) {
+  if (definition.type !== ApplicationCommandOptionType.Attachment) {
+    return { type: definition.type, name: definition.name, value };
   }
 
-  return { type: definition.type, name: definition.name, value };
+  const index = attachments.length;
+  attachments.push(await uploadInteractionAttachment(client, channelId, value, index));
+
+  return { type: definition.type, name: definition.name, value: String(index) };
 }
 
 /**
@@ -105,10 +111,14 @@ const ChannelInteractionActions = {
       throw new Error(`Command "${commandName}" needs at least ${required} option(s), got ${values.length}`);
     }
 
-    const built = values
-      .slice(0, definitions.length)
-      .map((value, index) => buildOption(definitions[index], value))
-      .filter(option => option.value !== undefined);
+    const attachments = [];
+    const built = [];
+    for (const [index, value] of values.slice(0, definitions.length).entries()) {
+      if (value === undefined) continue;
+      // Tuần tự chứ không Promise.all: chỉ số file phải khớp thứ tự trong
+      // `data.attachments`, chạy song song là lệch.
+      built.push(await buildOption(this.client, this.id, definitions[index], value, attachments));
+    }
 
     // Option của subcommand phải nằm lồng trong chính subcommand đó.
     let options = built;
@@ -127,6 +137,7 @@ const ChannelInteractionActions = {
       sessionId: this.client.sessionId,
       command,
       options,
+      attachments,
     });
 
     return sendInteraction(this.client, body);

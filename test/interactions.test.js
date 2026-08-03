@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('node:assert');
+const { Buffer } = require('node:buffer');
 const { test } = require('node:test');
 const { setImmediate } = require('node:timers');
 const { ApplicationCommandOptionType, ComponentType, InteractionType } = require('discord-api-types/v10');
@@ -360,7 +361,7 @@ test('sendSlash tu choi duong dan lenh qua sau', async () => {
   client.destroy();
 });
 
-test('sendSlash bao ro option attachment chua ho tro', async () => {
+test('sendSlash upload file roi gui chi so lam gia tri option', async t => {
   const withAttachment = {
     applications: [{ id: 'app1', bot_id: 'bot1' }],
     application_commands: [
@@ -374,8 +375,78 @@ test('sendSlash bao ro option attachment chua ho tro', async () => {
       },
     ],
   };
-  const { client, channel } = makeChannel(withAttachment);
+  const { client, channel, posted } = makeChannel(withAttachment);
 
-  await assert.rejects(() => channel.sendSlash('bot1', 'upload', 'x'), /attachment option, which is not supported/);
+  const slotRequests = [];
+  client.rest.post = async (route, options) => {
+    if (route === '/channels/c1/attachments') {
+      slotRequests.push(options.body);
+      return { attachments: [{ id: '0', upload_url: 'https://upload.test/abc', upload_filename: 'abc/anh.png' }] };
+    }
+    posted.push(options.body);
+    setImmediate(() => client.emit('messageCreate', { nonce: options.body.nonce, content: 'xong' }));
+    return undefined;
+  };
+
+  const uploads = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    uploads.push([url, init.method, init.body]);
+    return { ok: true, status: 200, statusText: 'OK' };
+  };
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const data = Buffer.from('noi dung anh');
+  await channel.sendSlash('bot1', 'upload', { name: 'anh.png', attachment: data });
+
+  // Kích thước gửi lên phải là số byte thật; bản v13 gửi số ngẫu nhiên.
+  assert.strictEqual(slotRequests[0].files[0].file_size, data.byteLength);
+  assert.strictEqual(slotRequests[0].files[0].filename, 'anh.png');
+
+  assert.deepStrictEqual(uploads[0][0], 'https://upload.test/abc');
+  assert.strictEqual(uploads[0][1], 'PUT');
+
+  // Giá trị của option là chỉ số trong data.attachments, không phải file.
+  assert.strictEqual(posted[0].data.options[0].value, '0');
+  assert.deepStrictEqual(posted[0].data.attachments, [
+    { id: '0', filename: 'anh.png', uploaded_filename: 'abc/anh.png' },
+  ]);
+
+  client.destroy();
+});
+
+test('upload that bai thi bao loi kem ma trang thai', async t => {
+  const { uploadToSlot } = require('../src/util/AttachmentUpload.js');
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({ ok: false, status: 403, statusText: 'Forbidden' });
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  await assert.rejects(() => uploadToSlot('https://upload.test/abc', Buffer.from('x')), /403 Forbidden/);
+});
+
+test('byteLengthOf tinh dung cho Buffer va chuoi', () => {
+  const { byteLengthOf } = require('../src/util/AttachmentUpload.js');
+
+  assert.strictEqual(byteLengthOf(Buffer.from('abc')), 3);
+  // Ký tự tiếng Việt nhiều byte hơn số ký tự.
+  assert.strictEqual(byteLengthOf('nội dung'), Buffer.byteLength('nội dung'));
+  assert.throws(() => byteLengthOf(123), /must be a Buffer/);
+});
+
+test('khong xin cho upload khi khong co file', async () => {
+  const { requestUploadSlots } = require('../src/util/AttachmentUpload.js');
+  const client = new Client({});
+  let called = false;
+  client.rest.post = async () => {
+    called = true;
+  };
+
+  assert.deepStrictEqual(await requestUploadSlots(client, 'c1', []), []);
+  assert.strictEqual(called, false);
+
   client.destroy();
 });

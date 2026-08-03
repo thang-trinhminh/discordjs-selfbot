@@ -145,5 +145,5 @@ Toàn bộ phần selfbot đã có khai báo type: `client.relationships`, `.set
 
 ## 6. Chưa có
 
-`RemoteAuth` (đăng nhập bằng QR), `passLogin`, gửi interaction với tư cách
-user, và toàn bộ voice/video. Xem `docs/superpowers/specs/` để biết kế hoạch.
+`RemoteAuth` (đăng nhập bằng QR) và `passLogin`. Xem `docs/superpowers/specs/`
+để biết kế hoạch.
