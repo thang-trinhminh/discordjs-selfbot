@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig.json",
+  "compilerOptions": {
+    // Type Checking
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "exactOptionalPropertyTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": false,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "strict": true,
+
+    // Modules
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+
+    // Emit
+    "noEmit": true,
+    "newLine": "lf",
+
+    // Interop Constraints
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": false,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+
+    // Language and Environment
+    "lib": ["ESNext", "esnext.disposable"],
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+
+    // Completeness
+    "pretty": false,
+    "skipDefaultLibCheck": true,
+    "skipLibCheck": true,
+
+    "types": [
+      "@discordjs/builders",
+      "@discordjs/util",
+      "@discordjs/collection",
+      "@discordjs/rest",
+      "@discordjs/ws",
+      "discord-api-types/v10",
+      "node",
+      "undici",
+      "@sapphire/snowflake"
+    ]
+  },
+  "include": ["typings/**/*.ts"],
+  "exclude": ["node_modules"]
+}

@@ -1,0 +1,17 @@
+# CHÚ Ý: file này chỉ có tác dụng khi bật CodeQL kiểu advanced setup (chạy bằng
+# workflow). Repo hiện không có workflow nào — kiểm thử chạy qua git hook của
+# husky. Giữ lại để nếu sau này bật code scanning thì đã có sẵn phần loại trừ.
+
+name: 'CodeQL config'
+
+# Thư mục test chỉ chứa giá trị giả để khoá hành vi (mật khẩu, token, mã 2FA).
+# Query hardcoded-credentials báo đúng cú pháp nhưng sai bản chất ở đây, nên loại
+# trừ đường dẫn thay vì tắt query — code thật trong src/ vẫn được quét đầy đủ.
+paths-ignore:
+  - test
+  - typings/*.test-d.ts
+  - scripts/smoke
+
+# Không tắt query nào. Nếu có cảnh báo trong src/ thì đó là cảnh báo cần đọc.
+queries:
+  - uses: security-and-quality

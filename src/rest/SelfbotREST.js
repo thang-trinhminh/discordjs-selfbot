@@ -1,0 +1,219 @@
+'use strict';
+
+const { REST, DefaultRestOptions } = require('@discordjs/rest');
+const { Agent, ProxyAgent, buildConnector } = require('undici');
+const {
+  DefaultUserAgent,
+  DefaultSuperProperties,
+  DefaultCiphers,
+  encodeSuperProperties,
+} = require('../util/SelfbotDefaults');
+
+/**
+ * Header tĩnh mà Discord web client luôn gửi. Thiếu bộ này thì request
+ * lộ ra là không phải browser.
+ * @param {Object} clientOptions Options của client
+ * @returns {Object<string, string>}
+ */
+function buildSelfbotHeaders(clientOptions) {
+  // Fallback vì user có thể truyền `ws` partial.
+  const properties = clientOptions.ws?.properties ?? DefaultSuperProperties;
+  const userAgent = properties.browser_user_agent ?? DefaultUserAgent;
+
+  return {
+    accept: '*/*',
+    'accept-language': 'en-US',
+    origin: 'https://discord.com',
+    priority: 'u=1, i',
+    referer: 'https://discord.com/channels/@me',
+    'sec-ch-ua': '"Not:A-Brand";v="24", "Chromium";v="134"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"Windows"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'user-agent': userAgent,
+    'x-debug-options': 'bugReporterEnabled',
+    'x-discord-locale': 'en-US',
+    'x-discord-timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
+    'x-super-properties': encodeSuperProperties(properties),
+    ...clientOptions.http?.headers,
+  };
+}
+
+/**
+ * `@discordjs/rest` luôn ghép `${authPrefix} ${token}` vào header Authorization.
+ * User token gửi trần, không prefix. Sửa tại chỗ trước khi request đi.
+ * @param {Object} headers Header của request
+ * @param {string} token Token trần
+ * @returns {Object} chính object headers đã sửa
+ */
+function rewriteAuthorization(headers, token) {
+  for (const key of Object.keys(headers)) {
+    if (key.toLowerCase() === 'authorization') headers[key] = token;
+  }
+  return headers;
+}
+
+/**
+ * `@discordjs/ws` gọi `GET /gateway/bot` để lấy gateway URL và session limit.
+ * User token bị 401 ở route đó, nên trả response tự dựng thay vì gọi mạng.
+ * Shape phải khớp `RESTGetAPIGatewayBotResult`.
+ * @returns {Object} object giống Response đủ cho @discordjs/rest parse
+ */
+function makeGatewayBotResponse() {
+  const body = JSON.stringify({
+    url: 'wss://gateway.discord.gg',
+    shards: 1,
+    session_start_limit: {
+      total: 1000,
+      remaining: 1000,
+      reset_after: 0,
+      max_concurrency: 1,
+    },
+  });
+
+  // Shape phải khớp `ResponseLike` của @discordjs/rest
+  // (packages/rest/src/strategies/undiciRequest.ts).
+  return {
+    body: null,
+    bodyUsed: false,
+    status: 200,
+    statusText: 'OK',
+    ok: true,
+    headers: new Headers({ 'content-type': 'application/json' }),
+    json: async () => JSON.parse(body),
+    text: async () => body,
+    arrayBuffer: async () => new TextEncoder().encode(body).buffer,
+  };
+}
+
+/**
+ * Dispatcher undici có TLS fingerprint giống Chrome, hoặc proxy nếu được cấu hình.
+ * @param {Object} clientOptions Options của client
+ * @returns {Dispatcher}
+ */
+function buildDispatcher(clientOptions) {
+  const proxy = clientOptions.http?.agent;
+  const ciphers = DefaultCiphers.join(':');
+
+  if (proxy) {
+    return new ProxyAgent({ ...(typeof proxy === 'string' ? { uri: proxy } : proxy), ciphers });
+  }
+
+  // Agent chứ không phải Client: Client chỉ phục vụ một origin, Agent dùng
+  // được cho mọi host mà REST có thể chạm tới.
+  return new Agent({ connect: buildConnector({ ciphers }) });
+}
+
+/**
+ * Đọc hết body rồi dựng lại một `ResponseLike` phát lại được.
+ *
+ * Cần vì muốn biết có phải lỗi captcha không thì phải đọc body, mà đọc là tiêu
+ * luôn stream — `@discordjs/rest` ở tầng trên sẽ không còn gì để đọc.
+ * @param {Object} response Response gốc
+ * @returns {Promise<Object>} Response đọc lại được nhiều lần
+ */
+async function bufferResponse(response) {
+  const text = await response.text();
+
+  return {
+    body: null,
+    bodyUsed: false,
+    status: response.status,
+    statusText: response.statusText,
+    ok: response.ok,
+    headers: response.headers,
+    text: async () => text,
+    json: async () => JSON.parse(text),
+    arrayBuffer: async () => new TextEncoder().encode(text).buffer,
+  };
+}
+
+/**
+ * Bóc thông tin captcha từ body lỗi, `null` nếu đây không phải lỗi captcha.
+ * @param {string} text Body dạng chuỗi
+ * @returns {?Object}
+ */
+function parseCaptchaError(text) {
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    return null;
+  }
+
+  if (!data?.captcha_sitekey && !data?.captcha_key) return null;
+  return data;
+}
+
+/**
+ * Tạo instance REST đã gắn shim selfbot.
+ * @param {Object} clientOptions Options của client (đã merge default)
+ * @returns {REST}
+ */
+function createSelfbotREST(clientOptions) {
+  const dispatcher = buildDispatcher(clientOptions);
+  // Token phải lấy tại thời điểm request, không phải lúc tạo REST.
+  let token = null;
+
+  const rest = new REST({
+    ...clientOptions.rest,
+    headers: buildSelfbotHeaders(clientOptions),
+    makeRequest: async (url, init) => {
+      if (new URL(url).pathname.endsWith('/gateway/bot')) {
+        return makeGatewayBotResponse();
+      }
+      if (token) rewriteAuthorization(init.headers, token);
+
+      const send = requestInit => DefaultRestOptions.makeRequest(url, { ...requestInit, dispatcher });
+
+      let response = await send(init);
+      if (response.status !== 400 || !clientOptions.captchaSolver) return response;
+
+      // Chỉ lỗi 400 mới có thể là captcha, nên chỉ đọc lại body ở nhánh này.
+      response = await bufferResponse(response);
+
+      let currentInit = init;
+      for (let attempt = 0; attempt < clientOptions.captchaRetryLimit; attempt += 1) {
+        const captcha = parseCaptchaError(await response.text());
+        if (!captcha) return response;
+
+        const solution = await clientOptions.captchaSolver(captcha, currentInit.headers['user-agent']);
+
+        currentInit = {
+          ...currentInit,
+          headers: {
+            ...currentInit.headers,
+            'x-captcha-key': solution,
+            ...(captcha.captcha_rqtoken ? { 'x-captcha-rqtoken': captcha.captcha_rqtoken } : {}),
+          },
+        };
+
+        const retried = await send(currentInit);
+        if (retried.status !== 400) return retried;
+        response = await bufferResponse(retried);
+      }
+
+      return response;
+    },
+  });
+
+  const originalSetToken = rest.setToken.bind(rest);
+  rest.setToken = value => {
+    token = value;
+    return originalSetToken(value);
+  };
+
+  return rest;
+}
+
+module.exports = {
+  createSelfbotREST,
+  bufferResponse,
+  parseCaptchaError,
+  buildSelfbotHeaders,
+  rewriteAuthorization,
+  buildDispatcher,
+  makeGatewayBotResponse,
+};
