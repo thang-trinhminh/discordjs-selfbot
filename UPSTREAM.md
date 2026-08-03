@@ -32,6 +32,7 @@ Mọi sửa đổi lên file upstream phải ghi vào đây kèm lý do một d�
 | `src/util/Channels.js` | `createChannel` dựng `GroupDMChannel` thay `PartialGroupDMChannel` (user account dùng group DM đầy đủ) |
 | `src/structures/Message.js` | Trộn `MessageInteractionActions` vào prototype (một dòng) |
 | `src/structures/interfaces/TextBasedChannel.js` | `applyToClass` gắn thêm `ChannelInteractionActions` |
-| `src/util/Events.js` | Thêm `RelationshipAdd/Remove/Update`, `UserNoteUpdate`, `CallCreate/Update/Delete`, `ChannelRecipientAdd/Remove`, `InteractionModalCreate` |
+| `src/client/voice/**` | Thay toàn bộ bằng stack voice kiểu v12 của selfbot-v13; v14 không có voice trong core |
+| `src/util/Events.js` | Thêm `GuildMemberSpeaking`, `RelationshipAdd/Remove/Update`, `UserNoteUpdate`, `CallCreate/Update/Delete`, `ChannelRecipientAdd/Remove`, `InteractionModalCreate` |
 | `typings/index.d.ts` | `intents` thành optional; nối thêm khối `//#region Selfbot` ở cuối file dùng declaration merging, nên phần thêm không đụng vào nơi khai báo gốc |
 | `src/index.js` | Bật compat layer ở cuối file; export phần selfbot: `RelationshipType`, `Session`, `UserRoutes`, các manager mới |

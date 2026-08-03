@@ -36,6 +36,7 @@
  * @property {string} GuildMemberAdd guildMemberAdd
  * @property {string} GuildMemberAvailable guildMemberAvailable
  * @property {string} GuildMemberRemove guildMemberRemove
+ * @property {string} GuildMemberSpeaking guildMemberSpeaking
  * @property {string} GuildMembersChunk guildMembersChunk
  * @property {string} GuildMemberUpdate guildMemberUpdate
  * @property {string} GuildRoleCreate roleCreate
@@ -142,6 +143,7 @@ module.exports = {
   GuildMemberAdd: 'guildMemberAdd',
   GuildMemberAvailable: 'guildMemberAvailable',
   GuildMemberRemove: 'guildMemberRemove',
+  GuildMemberSpeaking: 'guildMemberSpeaking',
   GuildMembersChunk: 'guildMembersChunk',
   GuildMemberUpdate: 'guildMemberUpdate',
   GuildRoleCreate: 'roleCreate',

@@ -24,7 +24,7 @@ tài khoản người dùng, thay cho
 | Lớp tương thích v13 + codemod | xong |
 | TypeScript | xong |
 | Gửi interaction với tư cách user | xong (trừ option kiểu attachment) |
-| Voice / video / Go Live | chưa |
+| Voice / video / Go Live | đã port, **chưa chứng minh** (xem ghi chú) |
 | Đăng nhập QR, đăng nhập mật khẩu | chưa |
 
 > [!IMPORTANT]
@@ -32,6 +32,13 @@ tài khoản người dùng, thay cho
 > test không chạm mạng. Các hằng số như `client_build_number`, `capabilities`,
 > `SpotifyRPC.flags` và khoảng 40 route trong `src/util/UserRoutes.js` đều lấy
 > từ bản v13 và **chưa được xác minh** với Discord hiện tại.
+
+> [!WARNING]
+> Riêng phần voice/video còn yếu hơn thế. Nó được port nguyên từ bản v13 và mọi
+> file đều nạp được, nhưng phần lõi — UDP, đóng gói RTP, handshake voice gateway,
+> mã hoá — **chỉ chứng minh được bằng một voice channel thật**. Test hiện tại chỉ
+> khoá được phần thuần tuý: bảng codec, dựng SDP, bitfield, và các chỗ v13 dùng
+> chuỗi enum mà v14 dùng số. Coi phần này là "đã port", không phải "đã chạy".
 
 ## Cài đặt
 
