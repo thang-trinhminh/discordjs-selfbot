@@ -10,10 +10,24 @@
 
 ## Nâng cấp
 
-    ./scripts/sync-upstream.sh <ref-mới>
+Nhánh `upstream-vendor` chỉ chứa `src/` và `typings/` **nguyên bản, chưa patch**. Nó là merge base:
+git so bản gốc cũ với bản gốc mới rồi tự áp lại patch selfbot, thay vì bắt tay dán lại từng file.
 
-Script ghi đè `src/` và `typings/`. Xem `git diff` để biết patch selfbot nào bị mất và apply lại.
-Sau khi nâng cấp, cập nhật bảng trên.
+    ./scripts/sync-upstream.sh <ref-mới>   # ghi commit mới lên upstream-vendor
+    git merge upstream-vendor              # git tự áp lại patch
+    npm test                               # lưới an toàn
+    # cập nhật bảng phía trên + bảng file bị sửa phía dưới
+
+Conflict chỉ nổ ở file upstream sửa đúng dòng fork đã sửa — đúng danh sách trong bảng dưới. Thử với
+`origin/main` (đã là nhánh v15 đang phát triển, thay đổi rất lớn): 358 file đổi, git tự merge 339,
+chỉ 19 file phải xử tay. Nâng cấp trong dòng v14 sẽ ít hơn nhiều.
+
+Hai điều dễ vấp:
+
+- Đừng commit lên `upstream-vendor` bằng `git commit` thường. Hook `pre-commit` chạy lint-staged, nó
+  format lại mã gốc và làm hỏng đúng thứ nhánh này cần giữ nguyên xi. Script dùng `git commit-tree`
+  nên không dính hook; nhánh này cũng không có `test/` để `node --test` chạy.
+- Script không đụng cây làm việc, chạy lúc đang sửa dở cũng được.
 
 ## Danh sách file upstream đã bị sửa
 
