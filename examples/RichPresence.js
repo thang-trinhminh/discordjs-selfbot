@@ -4,7 +4,7 @@
 // Chạy: DISCORD_TOKEN=... node examples/RichPresence.js
 
 const process = require('node:process');
-const { ActivityType, Client, CustomStatus, RichPresence, SpotifyRPC } = require('discordjs-selfbot-v14');
+const { ActivityType, Client, CustomStatus, RichPresence, SpotifyRPC } = require('discordjs-selfbot');
 
 const client = new Client({});
 

@@ -4,7 +4,7 @@
 // Chạy: DISCORD_TOKEN=... node examples/SlashCommand.js
 
 const process = require('node:process');
-const { Client } = require('discordjs-selfbot-v14');
+const { Client } = require('discordjs-selfbot');
 
 const client = new Client({});
 

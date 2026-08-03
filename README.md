@@ -1,125 +1,135 @@
-# discordjs-selfbot-v14
+**English** | [Tiếng Việt](./README.vi.md)
 
-Fork của [discord.js](https://github.com/discordjs/discord.js) `v14.27.0` cho
-tài khoản người dùng, thay cho
-[`discord.js-selfbot-v13`](https://github.com/aiko-chan-ai/discord.js-selfbot-v13)
-đã archive.
+# discordjs-selfbot
+
+A fork of [discord.js](https://github.com/discordjs/discord.js) `v14.27.0` for user
+accounts, replacing the archived
+[`discord.js-selfbot-v13`](https://github.com/aiko-chan-ai/discord.js-selfbot-v13).
 
 > [!CAUTION]
-> Dùng tài khoản người dùng để tự động hoá là **vi phạm điều khoản dịch vụ của
-> Discord** và có thể dẫn tới khoá tài khoản. Bạn tự chịu rủi ro.
+> Automating a user account **violates Discord's Terms of Service** and can get the
+> account disabled. Use at your own risk, and prefer a throwaway account.
 
-## Trạng thái
+## Status
 
-Đang phát triển, **chưa dùng cho việc thật**. Chưa publish lên npm.
+Under development, **not ready for production**. Not published to npm.
 
-| Phần                                                   | Trạng thái                                 |
-| ------------------------------------------------------ | ------------------------------------------ |
-| REST (spoof header, TLS fingerprint, proxy, captcha)   | xong                                       |
-| Gateway (identify cho tài khoản người dùng)            | xong                                       |
-| Quan hệ, phiên đăng nhập, ghi chú, cài đặt, thanh toán | xong                                       |
-| Group DM, cuộc gọi                                     | xong                                       |
-| Custom status, rich presence, Spotify RPC              | xong                                       |
-| WebEmbed                                               | xong                                       |
-| Lớp tương thích v13 + codemod                          | xong                                       |
-| TypeScript                                             | xong                                       |
-| Gửi interaction với tư cách user                       | xong                                       |
-| Voice / video / Go Live                                | đã port, **chưa chứng minh** (xem ghi chú) |
-| Đăng nhập QR, đăng nhập mật khẩu (kèm 2FA)             | xong                                       |
+| Area                                                    | Status                           |
+| ------------------------------------------------------- | -------------------------------- |
+| REST (header spoofing, TLS fingerprint, proxy, captcha) | done                             |
+| Gateway (user account identify)                         | done                             |
+| Relationships, sessions, notes, settings, billing       | done                             |
+| Group DMs, calls                                        | done                             |
+| Custom status, rich presence, Spotify RPC               | done                             |
+| WebEmbed                                                | done                             |
+| v13 compatibility layer + codemod                       | done                             |
+| TypeScript                                              | done                             |
+| Sending interactions as a user                          | done                             |
+| Voice / video / Go Live                                 | ported, **unproven** (see below) |
+| QR login, password login (with 2FA)                     | done                             |
 
 > [!IMPORTANT]
-> **Chưa chạy thử với token thật lần nào.** Toàn bộ kiểm thử hiện tại là unit
-> test không chạm mạng. Các hằng số như `client_build_number`, `capabilities`,
-> `SpotifyRPC.flags` và khoảng 40 route trong `src/util/UserRoutes.js` đều lấy
-> từ bản v13 và **chưa được xác minh** với Discord hiện tại.
+> Login and the read-only surface have been exercised against a real account
+> (see [`scripts/smoke/results.md`](./scripts/smoke/results.md)). Everything
+> beyond that is still covered only by offline unit tests. Constants such as
+> `client_build_number`, `capabilities`, `SpotifyRPC.flags` and most of the routes
+> in `src/util/UserRoutes.js` come from the v13 fork and remain **unverified**
+> against today's Discord.
 
 > [!WARNING]
-> Riêng phần voice/video còn yếu hơn thế. Nó được port nguyên từ bản v13 và mọi
-> file đều nạp được, nhưng phần lõi — UDP, đóng gói RTP, handshake voice gateway,
-> mã hoá — **chỉ chứng minh được bằng một voice channel thật**. Test hiện tại chỉ
-> khoá được phần thuần tuý: bảng codec, dựng SDP, bitfield, và các chỗ v13 dùng
-> chuỗi enum mà v14 dùng số. Coi phần này là "đã port", không phải "đã chạy".
+> Voice and video are weaker still. They were ported wholesale from the v13 fork
+> and every file loads, but the core — UDP, RTP packetisation, the voice gateway
+> handshake, encryption — **can only be proven by a real voice channel**. The
+> current tests pin the pure parts: the codec table, SDP construction, bitfields,
+> and the places where v13 used string enums and v14 uses numbers. Treat this as
+> "ported", not "working".
 
-## Cài đặt
+## Install
 
-Cần Node.js 20.18 trở lên.
+Requires Node.js 20.18 or newer.
 
 ```sh
-npm install github:trickstarcandina/discordjs-selfbot-v14
+npm install github:trickstarcandina/discordjs-selfbot
 ```
 
-## Dùng thử
+## Usage
 
 ```js
-const { Client } = require('discordjs-selfbot-v14');
+const { Client } = require('discordjs-selfbot');
 
-const client = new Client({}); // không cần intents
+const client = new Client({}); // no intents needed
 
 client.on('ready', () => {
-  console.log(`Đăng nhập với ${client.user.tag}`);
-  console.log(`${client.relationships.friendCache.size} bạn bè`);
+  console.log(`Logged in as ${client.user.tag}`);
+  console.log(`${client.relationships.friendCache.size} friends`);
 });
 
 client.login(process.env.DISCORD_TOKEN);
 ```
 
-Kiểm tra nền tảng bằng token thật:
+Check the foundation against a real token:
 
 ```sh
-DISCORD_TOKEN='...' npm run smoke:login
+node --env-file=.env scripts/smoke/readonly.mjs
 ```
 
-## Ví dụ
+Copy [`.env.example`](./.env.example) to `.env` first. See
+[`scripts/smoke/README.md`](./scripts/smoke/README.md) — each run costs one
+identify, so space runs out.
 
-Thư mục [`examples/`](./examples) có 9 script chạy được: đăng nhập bằng token,
-QR và mật khẩu; rich presence; gọi slash command; group DM và cuộc gọi;
-WebEmbed; proxy; voice.
+## Examples
 
-## Chuyển từ v13
+[`examples/`](./examples) holds nine runnable scripts: token, QR and password
+login; rich presence; invoking slash commands; group DMs and calls; WebEmbed;
+proxy; voice. They use placeholder ids — fill in your own before running.
 
-Lớp tương thích bật mặc định nên phần lớn code cũ chạy ngay. Phần phải sửa và
-codemod hỗ trợ đều ghi trong [`MIGRATION.md`](./MIGRATION.md).
+## Migrating from v13
 
-## Quan hệ với upstream
+The compatibility layer is on by default, so most old code runs unchanged. What
+must change, and what the codemod handles, is in [`MIGRATION.md`](./MIGRATION.md).
 
-Repo này là bản chép của `packages/discord.js/{src,typings}` tại một commit đã
-ghim, cộng thêm phần dành cho tài khoản người dùng.
+## Relationship to upstream
 
-[`UPSTREAM.md`](./UPSTREAM.md) ghi commit đang bám và **bảng đầy đủ các file
-upstream đã bị sửa kèm lý do**. Giữ bảng đó ngắn là tiêu chí thiết kế: mỗi file
-lệch thêm là một chỗ phải xử lý tay ở lần nâng cấp sau.
+This repo is a copy of `packages/discord.js/{src,typings}` at a pinned commit,
+plus the user-account additions.
 
-Nâng cấp upstream:
+[`UPSTREAM.md`](./UPSTREAM.md) records the commit being tracked and **the full
+table of modified upstream files with a reason each**. Keeping that table short is
+a design goal: every extra divergent file is another manual merge later.
+
+Upgrading is a merge, not a re-patch. The `upstream-vendor` branch holds pristine
+upstream sources and acts as the merge base:
 
 ```sh
-./scripts/sync-upstream.sh <commit-moi>
-git diff   # xem patch nào bị ghi đè, apply lại
+cd ../discord.js && git fetch          # refresh the upstream clone
+./scripts/sync-upstream.sh origin/v14  # write a commit onto upstream-vendor
+git merge upstream-vendor              # git reapplies the selfbot patches
+npm test
 ```
 
-## Phát triển
+## Development
 
 ```sh
-npm run lint          # eslint + prettier
-node --test           # unit test
+npm run lint              # eslint + prettier
+node --test               # unit tests
 npm run test:typescript   # tsc + tsd
-npm test              # cả ba
+npm test                  # all three
 ```
 
-Git hook chạy sẵn qua husky, chia theo tốc độ:
+Git hooks run through husky, split by speed:
 
-| Hook         | Chạy gì                                        | Mất  |
-| ------------ | ---------------------------------------------- | ---- |
-| `pre-commit` | lint-staged (chỉ file đang staged) + unit test | ~3s  |
-| `pre-push`   | `tsc` + hai bộ `tsd`                           | ~18s |
+| Hook         | Runs                                          | Takes |
+| ------------ | --------------------------------------------- | ----- |
+| `pre-commit` | lint-staged (staged files only) + unit tests  | ~3s   |
+| `pre-push`   | full lint + unit tests + `tsc` and both `tsd` | ~25s  |
 
-Hook là lưới đỡ tại chỗ, **không thay được CI**: `--no-verify` bỏ qua được hết,
-hook chỉ chạy trên đúng bản Node của máy bạn, còn CI chạy ma trận 20.18/22/24
-cộng CodeQL và job đo lệch upstream.
+There is no CI: the hooks are the only gate, so `--no-verify` skips every check
+and hooks only ever run on your local Node version.
 
-Quy ước: code dành cho tài khoản người dùng đi vào **file mới**; sửa file
-upstream là phương án cuối, và phải ghi vào bảng trong `UPSTREAM.md`.
+Convention: user-account code goes in **new files**; editing an upstream file is a
+last resort and must be recorded in the `UPSTREAM.md` table.
 
-## Giấy phép
+## License
 
-Apache-2.0, theo discord.js. Xem [`LICENSE`](./LICENSE) và [`NOTICE`](./NOTICE)
-để biết phần ghi công cho tác phẩm gốc.
+Apache-2.0, following discord.js. See [`LICENSE`](./LICENSE) and
+[`NOTICE`](./NOTICE) for attribution of the original work.

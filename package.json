@@ -1,5 +1,5 @@
 {
-  "name": "discordjs-selfbot-v14",
+  "name": "discordjs-selfbot",
   "version": "0.1.0",
   "description": "An unofficial discord.js v14 fork for user accounts",
   "main": "./src/index.js",
@@ -11,6 +11,7 @@
     "format": "prettier --write \"src/**/*.js\" \"test/**/*.js\"",
     "test:typescript": "tsc --noEmit && tsd --files typings/index.test-d.ts && tsd --files typings/selfbot.test-d.ts",
     "smoke:login": "node scripts/smoke/login.mjs",
+    "smoke:readonly": "node --env-file=.env scripts/smoke/readonly.mjs",
     "prepare": "husky"
   },
   "files": [

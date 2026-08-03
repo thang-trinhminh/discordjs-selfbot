@@ -3,7 +3,7 @@
 // Đăng nhập bằng cách quét mã QR trên ứng dụng Discord ở điện thoại.
 // Chạy: node examples/QRLogin.js
 
-const { Client, RemoteAuth } = require('discordjs-selfbot-v14');
+const { Client, RemoteAuth } = require('discordjs-selfbot');
 
 const client = new Client({});
 

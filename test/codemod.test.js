@@ -36,7 +36,7 @@ test('bao cho mo ho thay vi doan', async () => {
 
 test('doi dinh danh ma compat co tinh khong alias', async () => {
   ({ transform } = await import('../scripts/codemod-v13-to-v14.mjs'));
-  const result = transform(`const { TextInputComponent, SelectMenuInteraction } = require('discordjs-selfbot-v14');\n`);
+  const result = transform(`const { TextInputComponent, SelectMenuInteraction } = require('discordjs-selfbot');\n`);
 
   assert.ok(result.code.includes('TextInputBuilder'));
   assert.ok(result.code.includes('StringSelectMenuInteraction'));

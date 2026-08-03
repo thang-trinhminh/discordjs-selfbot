@@ -1,159 +1,168 @@
-# Chuyển từ `discord.js-selfbot-v13`
+**English** | [Tiếng Việt](./MIGRATION.vi.md)
 
-Thư viện này dựng trên `discord.js@14.27.0`, thay cho `discord.js-selfbot-v13`
-(nền `discord.js@13.17.1`, đã archive).
+# Migrating from `discord.js-selfbot-v13`
 
-Lớp tương thích **bật mặc định**, nên phần lớn code cũ chạy được ngay. Tài liệu
-này liệt kê chính xác phần nào không chạy được và phải sửa thế nào.
+This library is built on `discord.js@14.27.0`, replacing `discord.js-selfbot-v13`
+(based on `discord.js@13.17.1`, archived).
 
-## Chạy codemod trước
+The compatibility layer is **on by default**, so most old code runs unchanged.
+This document lists exactly what does not, and how to fix it.
+
+## Run the codemod first
 
 ```sh
-# Xem trước, không ghi
-node scripts/codemod-v13-to-v14.mjs ../repo-cua-ban/src
+# Preview, writes nothing
+node scripts/codemod-v13-to-v14.mjs ../your-repo/src
 
-# Ghi thật
-node scripts/codemod-v13-to-v14.mjs ../repo-cua-ban/src --write
+# Apply
+node scripts/codemod-v13-to-v14.mjs ../your-repo/src --write
 ```
 
-Nó sửa được phần lớn mục 1 và 2 dưới đây, và **báo** những chỗ nó không dám
-đoán. Đây là công cụ hỗ trợ dựa trên regex, không phải trình kiểm chứng — đọc
-lại diff trước khi commit.
+It handles most of sections 1 and 2 below, and **reports** the cases it will not
+guess at. It is a regex-based aid, not a verifier — read the diff before you
+commit.
 
-## 1. So sánh chuỗi ở phía đọc
+## 1. String comparisons on the read side
 
-Đây là thay đổi ảnh hưởng rộng nhất và là thứ lớp tương thích **không** cứu được.
+This is the widest-reaching change, and the one the compatibility layer **cannot**
+paper over.
 
 ```js
 // v13
-if (channel.type === 'GUILD_TEXT') { }
+if (channel.type === 'GUILD_TEXT') {
+}
 
 // v14
 const { ChannelType } = require('discord-api-types/v10');
-if (channel.type === ChannelType.GuildText) { }
+if (channel.type === ChannelType.GuildText) {
+}
 ```
 
-Ở v14, `channel.type` trả về **số**. Muốn giữ chuỗi thì phải ép toàn bộ nội bộ
-discord.js quay về string enum — 99 chỗ `ChannelType` trên 18 file, 84 chỗ
-`AuditLogEvent`, 70 chỗ `MessageType`. Làm vậy là mất khả năng merge fix từ
-upstream, tức mất chính lý do chuyển sang v14.
+In v14 `channel.type` returns a **number**. Keeping the strings would mean forcing
+all of discord.js internals back to string enums — 99 `ChannelType` sites across
+18 files, 84 `AuditLogEvent`, 70 `MessageType`. That forfeits the ability to merge
+upstream fixes, which is the whole reason to move to v14.
 
-Áp dụng cho mọi enum: `type`, `style`, `verificationLevel`, `premiumTier`,
-`nsfwLevel`, `status`, `privacyLevel`, `entityType`, `membershipState`...
+The same applies to every enum: `type`, `style`, `verificationLevel`,
+`premiumTier`, `nsfwLevel`, `status`, `privacyLevel`, `entityType`,
+`membershipState`, and so on.
 
-Muốn viết ít nhất thì dùng `Constants` kiểu v13, vẫn còn:
+For the smallest diff, the v13-shaped `Constants` object is still there:
 
 ```js
-const { Constants } = require('discordjs-selfbot-v14');
-if (channel.type === Constants.ChannelTypes.GUILD_TEXT) { }
+const { Constants } = require('discordjs-selfbot');
+if (channel.type === Constants.ChannelTypes.GUILD_TEXT) {
+}
 ```
 
-## 2. Tên tồn tại ở cả hai phiên bản nhưng khác nghĩa
+## 2. Names that exist in both versions but mean different things
 
-Không alias được, vì ở v14 những tên này đã mang nghĩa khác. Dùng tên cũ là
-**hỏng thật**, không phải chỉ lỗi thời.
+These cannot be aliased, because in v14 the names already mean something else.
+Using the old name is **actually broken**, not merely outdated.
 
-| Tên | Ở v13 là | Ở v14 là | Đổi sang |
-|---|---|---|---|
-| `TextInputComponent` | builder ô nhập | model ô nhập đã gửi | `TextInputBuilder` |
-| `CommandInteraction` | interaction slash command | lớp cha của mọi command interaction | `ChatInputCommandInteraction` |
-| `SelectMenuInteraction` | interaction select menu | lớp cha của mọi select menu | `StringSelectMenuInteraction` |
-| `MessageFlags` | lớp BitField | enum của API | `MessageFlagsBitField` |
-| `UserFlags` | lớp BitField | enum của API | `UserFlagsBitField` |
-| `ActivityFlags` | lớp BitField | enum của API | `ActivityFlagsBitField` |
-| `ApplicationFlags` | lớp BitField | enum của API | `ApplicationFlagsBitField` |
-| `ChannelFlags` | lớp BitField | enum của API | `ChannelFlagsBitField` |
-| `GuildMemberFlags` | lớp BitField | enum của API | `GuildMemberFlagsBitField` |
-| `RoleFlags` | lớp BitField | enum của API | `RoleFlagsBitField` |
-| `AttachmentFlags` | lớp BitField | enum của API | `AttachmentFlagsBitField` |
-| `ThreadMemberFlags` | lớp BitField | enum của API | `ThreadMemberFlagsBitField` |
+| Name                    | In v13                    | In v14                                 | Change to                     |
+| ----------------------- | ------------------------- | -------------------------------------- | ----------------------------- |
+| `TextInputComponent`    | text input builder        | submitted text input model             | `TextInputBuilder`            |
+| `CommandInteraction`    | slash command interaction | base class of all command interactions | `ChatInputCommandInteraction` |
+| `SelectMenuInteraction` | select menu interaction   | base class of all select menus         | `StringSelectMenuInteraction` |
+| `MessageFlags`          | BitField class            | API enum                               | `MessageFlagsBitField`        |
+| `UserFlags`             | BitField class            | API enum                               | `UserFlagsBitField`           |
+| `ActivityFlags`         | BitField class            | API enum                               | `ActivityFlagsBitField`       |
+| `ApplicationFlags`      | BitField class            | API enum                               | `ApplicationFlagsBitField`    |
+| `ChannelFlags`          | BitField class            | API enum                               | `ChannelFlagsBitField`        |
+| `GuildMemberFlags`      | BitField class            | API enum                               | `GuildMemberFlagsBitField`    |
+| `RoleFlags`             | BitField class            | API enum                               | `RoleFlagsBitField`           |
+| `AttachmentFlags`       | BitField class            | API enum                               | `AttachmentFlagsBitField`     |
+| `ThreadMemberFlags`     | BitField class            | API enum                               | `ThreadMemberFlagsBitField`   |
 
-## 3. Phần chạy được ngay, không cần sửa
+## 3. What works as-is
 
-### Tên lớp
+### Class names
 
 `MessageEmbed`, `MessageAttachment`, `MessageActionRow`, `MessageButton`,
 `MessageSelectMenu`, `MessageSelectOption`, `Modal`, `Channel`,
 `BaseCommandInteraction`, `ContextMenuInteraction`, `Permissions`, `Intents`,
-`SystemChannelFlags` — đều là alias trỏ thẳng tới lớp v14, nên `instanceof` vẫn
-đúng cả hai chiều.
+`SystemChannelFlags` — all are aliases pointing straight at the v14 class, so
+`instanceof` holds in both directions.
 
-### Tên quyền và cờ
+### Permission and flag names
 
 ```js
-// Cả hai cách viết đều chạy
+// Both spellings work
 channel.permissionsFor(member).has('SEND_MESSAGES');
 channel.permissionsFor(member).has('SendMessages');
 new Permissions(['SEND_MESSAGES', 'ManageGuild']);
 ```
 
-Kể cả những tên bị đổi hẳn: `MANAGE_EMOJIS_AND_STICKERS`, `USE_PUBLIC_THREADS`,
-`USE_PRIVATE_THREADS`, `START_EMBEDDED_ACTIVITIES`, `USE_VAD`.
+Including the ones that were renamed outright: `MANAGE_EMOJIS_AND_STICKERS`,
+`USE_PUBLIC_THREADS`, `USE_PRIVATE_THREADS`, `START_EMBEDDED_ACTIVITIES`,
+`USE_VAD`.
 
-Lưu ý: `toArray()` trả về **tên kiểu v14**. Code nào so sánh kết quả `toArray()`
-với chuỗi kiểu v13 vẫn phải sửa.
+Note that `toArray()` returns **v14-style names**. Code comparing the result of
+`toArray()` against v13 strings still has to change.
 
-### Chuỗi enum ở phía ghi
+### Enum strings on the write side
 
-Chạy được tại các điểm sau:
+Accepted at these call sites:
 
 - `guild.channels.create()` / `.edit()` — `type`, `videoQualityMode`
-- `client.guilds.create()` và `guild.edit()` — `verificationLevel`,
+- `client.guilds.create()` and `guild.edit()` — `verificationLevel`,
   `defaultMessageNotifications`, `explicitContentFilter`
 - `guild.scheduledEvents.create()` / `.edit()` — `privacyLevel`, `entityType`, `status`
 - `guild.stageInstances.create()` / `.edit()` — `privacyLevel`
-- `client.user.setActivity()` / `setPresence()` — `type` của activity
+- `client.user.setActivity()` / `setPresence()` — activity `type`
 
-Ngoài danh sách này thì chưa phủ. Truyền chuỗi không dịch được sẽ đi thẳng tới
-API để API tự báo lỗi, chứ không bị đổi thành `undefined`.
+Anything outside this list is not covered. A string that cannot be translated is
+passed through to the API so the API reports the error, rather than being turned
+into `undefined`.
 
-### Method đã đổi tên
+### Renamed methods
 
-`embed.addField(name, value, inline)`, `channel.isText()`, `channel.isVoice()`
-vẫn dùng được.
+`embed.addField(name, value, inline)`, `channel.isText()` and `channel.isVoice()`
+still work.
 
-## 4. Thay đổi riêng của phần selfbot
+## 4. Selfbot-specific changes
 
-| v13 | Ở đây | Lý do |
-|---|---|---|
-| `session.createdAt` | `session.lastUsedAt` | Giá trị là `approx_last_used_time`, không phải thời điểm tạo. Tên cũ giữ làm alias `@deprecated` |
-| `boost.guilld` | `boost.guild` | Bản v13 gõ thừa một chữ `l` nên getter đó không ai gọi tới được |
-| `clientUser.getAllFriendInvites()` | `clientUser.fetchFriendInvites()` | Theo quy ước `fetch*` của discord.js |
-| `new CustomStatus(client)` | `new CustomStatus()` | Không còn kế thừa `Activity` nên không cần `client` |
-| `new RichPresence(client)` | `new RichPresence()` | Như trên |
-| `channel.getInvite()` | `channel.createInvite()` | Nó tạo lời mời chứ không phải lấy |
-| `channel.fetchAllInvite()` | `channel.fetchInvites()` | Theo quy ước số nhiều của discord.js |
-| `channel.removeInvite()` | `channel.deleteInvite()` | Theo quy ước `delete*` |
+| v13                                | Here                              | Why                                                                                                    |
+| ---------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `session.createdAt`                | `session.lastUsedAt`              | The value is `approx_last_used_time`, not a creation time. The old name stays as a `@deprecated` alias |
+| `boost.guilld`                     | `boost.guild`                     | v13 had a typo, so that getter was unreachable                                                         |
+| `clientUser.getAllFriendInvites()` | `clientUser.fetchFriendInvites()` | Follows the discord.js `fetch*` convention                                                             |
+| `new CustomStatus(client)`         | `new CustomStatus()`              | No longer extends `Activity`, so `client` is unnecessary                                               |
+| `new RichPresence(client)`         | `new RichPresence()`              | Same                                                                                                   |
+| `channel.getInvite()`              | `channel.createInvite()`          | It creates an invite, it does not get one                                                              |
+| `channel.fetchAllInvite()`         | `channel.fetchInvites()`          | Follows the discord.js plural convention                                                               |
+| `channel.removeInvite()`           | `channel.deleteInvite()`          | Follows the `delete*` convention                                                                       |
 
-### Đã bỏ, không port
+### Dropped, not ported
 
-`relationship.sendFriendRequest()`, `.addFriend()`, `.addBlocked()`,
-`.deleteRelationship()` — cả bốn ở bản v13 đều `throw` ngay dòng đầu
-(`'Risky action, not finished yet.'`), port sang chỉ là chép code chết.
+`relationship.sendFriendRequest()`, `.addFriend()`, `.addBlocked()` and
+`.deleteRelationship()` — all four threw on their first line in v13
+(`'Risky action, not finished yet.'`), so porting them would only copy dead code.
 
 ## 5. TypeScript
 
-`intents` không còn bắt buộc:
+`intents` is no longer required:
 
 ```ts
-const client = new Client({}); // hợp lệ
+const client = new Client({}); // valid
 ```
 
-Toàn bộ phần selfbot đã có khai báo type: `client.relationships`, `.settings`,
-`.sessions`, `.notes`, `.billing`, cùng `WebEmbed`, `CustomStatus`,
-`RichPresence`, `SpotifyRPC`, `Session`, `CallState`, `GuildBoost`.
+The whole selfbot surface is typed: `client.relationships`, `.settings`,
+`.sessions`, `.notes`, `.billing`, along with `WebEmbed`, `CustomStatus`,
+`RichPresence`, `SpotifyRPC`, `Session`, `CallState` and `GuildBoost`.
 
-## 6. Đăng nhập
+## 6. Logging in
 
-Ngoài token, giờ có thêm hai cách:
+Besides a token, there are now two more ways:
 
 ```js
-// Quét mã QR bằng ứng dụng Discord trên điện thoại
+// Scan a QR code with the Discord mobile app
 await client.QRLogin();
 
-// Email và mật khẩu, tự sinh mã 2FA từ secret base32
-await client.passLogin('a@b.vn', 'mat-khau', { mfaSecret: 'BASE32SECRET' });
+// Email and password, generating the 2FA code from a base32 secret
+await client.passLogin('a@b.com', 'password', { mfaSecret: 'BASE32SECRET' });
 ```
 
-`passLogin` rủi ro hơn dùng token: Discord soi kỹ đăng nhập bằng mật khẩu và hay
-chặn bằng captcha. Cấu hình `captchaSolver` trước nếu cần.
+`passLogin` is riskier than using a token: Discord scrutinises password logins and
+often blocks them with a captcha. Configure `captchaSolver` first if you need it.
