@@ -1,3 +1,7 @@
+# CHÚ Ý: file này chỉ có tác dụng khi bật CodeQL kiểu advanced setup (chạy bằng
+# workflow). Repo hiện không có workflow nào — kiểm thử chạy qua git hook của
+# husky. Giữ lại để nếu sau này bật code scanning thì đã có sẵn phần loại trừ.
+
 name: 'CodeQL config'
 
 # Thư mục test chỉ chứa giá trị giả để khoá hành vi (mật khẩu, token, mã 2FA).

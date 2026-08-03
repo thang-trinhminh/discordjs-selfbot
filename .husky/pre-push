@@ -1,2 +1,8 @@
-# Phần chậm, chạy một lần mỗi push chứ không mỗi commit: tsc 6s + tsd 12s.
+# Husky là cổng duy nhất — không còn CI trên GitHub đỡ phía sau — nên push phải
+# chạy đủ bộ, không chỉ typecheck.
+#
+# Lint cả repo chứ không chỉ file staged: pre-commit dùng lint-staged nên file
+# đổi do merge hoặc rebase có thể chưa từng qua eslint lần nào.
+npm run lint
+node --test
 npm run test:typescript
