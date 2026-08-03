@@ -273,3 +273,13 @@ __exportStar(require('@discordjs/formatters'), exports);
 __exportStar(require('@discordjs/rest'), exports);
 __exportStar(require('@discordjs/util'), exports);
 __exportStar(require('@discordjs/ws'), exports);
+
+// Lớp tương thích v13, bật mặc định. Xem src/compat/index.js để biết phần nào
+// KHÔNG cứu được (so sánh literal ở phía đọc).
+const { applyCompat, Constants: LegacyConstants } = require('./compat');
+for (const [name, value] of Object.entries(applyCompat())) {
+  // `exports` có sẵn getter cho phần re-export từ discord-api-types, gán đè sẽ
+  // ném. Alias nào trùng tên với thứ đã export thì bỏ qua.
+  if (!(name in exports)) exports[name] = value;
+}
+exports.Constants = LegacyConstants;
