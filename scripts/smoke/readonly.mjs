@@ -19,7 +19,10 @@ if (!token) {
 
 // Nghi giua moi lan goi REST. Discord danh dau tai khoan burst request la bot.
 const CALL_DELAY_MS = Number(process.env.SMOKE_CALL_DELAY_MS ?? 2000);
-const LOG_FILE = new URL('last-run.log', import.meta.url);
+
+// File nay duoc commit, nen chi ghi ngay va pass/fail. Gia tri tra ve (so guild,
+// so ban be, setting, tag tai khoan) chi hien tren console roi mat.
+const LOG_FILE = new URL('results.md', import.meta.url);
 
 const client = new Client({});
 const results = [];
@@ -96,15 +99,20 @@ client.once('ready', async () => {
   });
 
   const failed = results.filter(result => result.status === 'FAIL');
-  const report = [
-    `# smoke readonly ${new Date().toISOString()}`,
-    ...results.map(result => `${result.status.padEnd(4)} ${result.name} — ${result.detail} (${result.ms}ms)`),
-    `tong: ${results.length - failed.length}/${results.length} pass`,
-    '',
-  ].join('\n');
+  const passed = results.length - failed.length;
 
-  console.log(report);
-  appendFileSync(LOG_FILE, `${report}\n`);
+  // Console: kem gia tri tra ve, de con soi khi fail.
+  console.log(
+    results.map(result => `${result.status.padEnd(4)} ${result.name} — ${result.detail} (${result.ms}ms)`).join('\n'),
+  );
+  console.log(`tong: ${passed}/${results.length} pass`);
+
+  // File: chi ngay va pass/fail.
+  const row = [
+    `| ${new Date().toISOString().replace('T', ' ').slice(0, 16)} | readonly | ${passed}/${results.length} |`,
+    failed.length ? ` ${failed.map(result => result.name).join(', ')} |` : ' — |',
+  ].join('');
+  appendFileSync(LOG_FILE, `${row}\n`);
   console.log(`Da ghi ket qua vao ${LOG_FILE.pathname}`);
 
   client.destroy();
