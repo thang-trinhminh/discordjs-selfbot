@@ -4,10 +4,6 @@ const { Collection } = require('@discordjs/collection');
 const { DiscordSnowflake } = require('@sapphire/snowflake');
 const { InteractionType, Routes } = require('discord-api-types/v10');
 const { DiscordjsTypeError, DiscordjsError, ErrorCodes } = require('../../errors');
-const { MaxBulkDeletableMessageAge } = require('../../util/Constants');
-const InteractionCollector = require('../InteractionCollector');
-const MessageCollector = require('../MessageCollector');
-const MessagePayload = require('../MessagePayload');
 
 /**
  * Interface for classes that have text-channel-like features.
@@ -412,6 +408,14 @@ class TextBasedChannel {
   }
 
   static applyToClass(structure, full = false, ignore = []) {
+    // Thao tác interaction dành cho tài khoản người dùng, gắn cùng lúc với
+    // phần text-based của upstream. Require lazy để không phải chen vào thứ tự
+    // import của file upstream. Xem ChannelInteractionActions.js.
+    const ChannelInteractionActions = require('../ChannelInteractionActions');
+    for (const [name, method] of Object.entries(ChannelInteractionActions)) {
+      if (!ignore.includes(name)) Object.defineProperty(structure.prototype, name, { value: method });
+    }
+
     const props = ['send'];
     if (full) {
       props.push(
@@ -445,3 +449,7 @@ module.exports = TextBasedChannel;
 // Fixes Circular
 // eslint-disable-next-line import/order
 const GuildMessageManager = require('../../managers/GuildMessageManager');
+const { MaxBulkDeletableMessageAge } = require('../../util/Constants');
+const InteractionCollector = require('../InteractionCollector');
+const MessageCollector = require('../MessageCollector');
+const MessagePayload = require('../MessagePayload');

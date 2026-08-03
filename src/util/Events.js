@@ -56,6 +56,7 @@
  * @property {string} GuildUnavailable guildUnavailable
  * @property {string} GuildUpdate guildUpdate
  * @property {string} InteractionCreate interactionCreate
+ * @property {string} InteractionModalCreate interactionModalCreate
  * @property {string} Invalidated invalidated
  * @property {string} InviteCreate inviteCreate
  * @property {string} InviteDelete inviteDelete
@@ -161,6 +162,7 @@ module.exports = {
   GuildUnavailable: 'guildUnavailable',
   GuildUpdate: 'guildUpdate',
   InteractionCreate: 'interactionCreate',
+  InteractionModalCreate: 'interactionModalCreate',
   Invalidated: 'invalidated',
   InviteCreate: 'inviteCreate',
   InviteDelete: 'inviteDelete',

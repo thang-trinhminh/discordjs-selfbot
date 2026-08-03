@@ -44,6 +44,7 @@ const handlers = Object.fromEntries([
   ['GUILD_STICKERS_UPDATE', require('./GUILD_STICKERS_UPDATE')],
   ['GUILD_UPDATE', require('./GUILD_UPDATE')],
   ['INTERACTION_CREATE', require('./INTERACTION_CREATE')],
+  ['INTERACTION_MODAL_CREATE', require('./INTERACTION_MODAL_CREATE')],
   ['INVITE_CREATE', require('./INVITE_CREATE')],
   ['INVITE_DELETE', require('./INVITE_DELETE')],
   ['MESSAGE_CREATE', require('./MESSAGE_CREATE')],

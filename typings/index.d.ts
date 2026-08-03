@@ -8602,6 +8602,30 @@ export interface ClientOptions {
   captchaRetryLimit?: number;
 }
 
+export interface ApplicationCommandSearchOptions {
+  query?: string;
+  limit?: number;
+  applicationId?: Snowflake;
+}
+
+export interface ChannelInteractionActions {
+  searchApplicationCommands(options?: ApplicationCommandSearchOptions): Promise<unknown>;
+  sendSlash(bot: UserResolvable, commandName: string, ...args: unknown[]): Promise<Message | unknown>;
+}
+
+export interface Message<InGuild extends boolean = boolean> {
+  clickButton(button: string | number, timeout?: number): Promise<Message | unknown>;
+  selectMenu(menu: string | number, values?: readonly string[], timeout?: number): Promise<Message | unknown>;
+}
+
+export interface TextChannel extends ChannelInteractionActions {}
+export interface DMChannel extends ChannelInteractionActions {}
+export interface NewsChannel extends ChannelInteractionActions {}
+export interface ThreadChannel extends ChannelInteractionActions {}
+export interface VoiceChannel extends ChannelInteractionActions {}
+export interface StageChannel extends ChannelInteractionActions {}
+export interface GroupDMChannel extends ChannelInteractionActions {}
+
 export interface RelationshipUpdateData {
   type: number | null;
   nickname: string | null;
@@ -8618,6 +8642,7 @@ export interface ClientEvents {
   callDelete: [call: CallState];
   channelRecipientAdd: [channel: GroupDMChannel, user: User];
   channelRecipientRemove: [channel: GroupDMChannel, user: User];
+  interactionModalCreate: [modal: unknown];
 }
 
 //#endregion

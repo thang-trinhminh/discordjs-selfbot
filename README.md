@@ -23,7 +23,7 @@ tài khoản người dùng, thay cho
 | WebEmbed | xong |
 | Lớp tương thích v13 + codemod | xong |
 | TypeScript | xong |
-| Gửi interaction với tư cách user | chưa |
+| Gửi interaction với tư cách user | xong (trừ option kiểu attachment) |
 | Voice / video / Go Live | chưa |
 | Đăng nhập QR, đăng nhập mật khẩu | chưa |
 

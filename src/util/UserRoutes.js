@@ -222,6 +222,23 @@ const UserRoutes = {
   },
 
   /**
+   * Route gửi interaction với tư cách tài khoản người dùng.
+   * @returns {string}
+   */
+  interactions() {
+    return '/interactions';
+  },
+
+  /**
+   * Route tìm application command dùng được trong một kênh.
+   * @param {Snowflake} channelId Id của kênh
+   * @returns {string}
+   */
+  channelApplicationCommandSearch(channelId) {
+    return `/channels/${channelId}/application-commands/search`;
+  },
+
+  /**
    * Route setting tài khoản của client user.
    * @returns {string}
    */

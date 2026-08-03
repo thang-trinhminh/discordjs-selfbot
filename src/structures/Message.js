@@ -16,6 +16,7 @@ const Base = require('./Base');
 const ClientApplication = require('./ClientApplication');
 const Embed = require('./Embed');
 const InteractionCollector = require('./InteractionCollector');
+const MessageInteractionActions = require('./MessageInteractionActions');
 const Mentions = require('./MessageMentions');
 const MessagePayload = require('./MessagePayload');
 const { Poll } = require('./Poll.js');
@@ -1158,5 +1159,9 @@ class Message extends Base {
     });
   }
 }
+
+// Trộn thao tác component dành cho tài khoản người dùng. Xem
+// MessageInteractionActions.js.
+Object.assign(Message.prototype, MessageInteractionActions);
 
 exports.Message = Message;
