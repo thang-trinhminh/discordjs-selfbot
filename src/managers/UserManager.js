@@ -7,6 +7,7 @@ const { GuildMember } = require('../structures/GuildMember');
 const { Message } = require('../structures/Message');
 const ThreadMember = require('../structures/ThreadMember');
 const User = require('../structures/User');
+const { UserRoutes } = require('../util/UserRoutes');
 const { emitDeprecationWarningForUserFetchFlags } = require('../util/Util');
 
 /**
@@ -97,8 +98,11 @@ class UserManager extends CachedManager {
       if (existing && !existing.partial) return existing;
     }
 
-    const data = await this.client.rest.get(Routes.user(id));
-    return this._add(data, cache);
+    // `GET /users/:id` là route bot-only: token người dùng ăn 403 code 40001. Route
+    // profile trả cùng object user nằm trong field `user`, kèm dữ liệu hồ sơ khác
+    // mà bản này chưa dùng tới.
+    const data = await this.client.rest.get(UserRoutes.profile(id));
+    return this._add(data.user ?? data, cache);
   }
 
   /**

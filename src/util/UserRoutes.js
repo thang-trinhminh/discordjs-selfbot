@@ -33,6 +33,16 @@ const UserRoutes = {
   },
 
   /**
+   * Route hồ sơ của một user. Tài khoản người dùng không gọi được `GET /users/:id`
+   * (403, code 40001) — chỉ bot mới gọi được — nên phải đi qua route này.
+   * @param {Snowflake} userId Id của user cần xem
+   * @returns {string}
+   */
+  profile(userId) {
+    return `/users/${userId}/profile`;
+  },
+
+  /**
    * Route đẩy ảnh ngoài lên proxy của Discord để dùng làm asset rich presence.
    * @param {Snowflake} applicationId Id của application
    * @returns {string}

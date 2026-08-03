@@ -80,3 +80,24 @@ test('BaseClient dung shim, khong dung REST thuan', () => {
   assert.strictEqual(client.rest.options.headers.origin, 'https://discord.com');
   client.destroy();
 });
+
+test('users.fetch di qua route profile chu khong phai GET /users/:id', async () => {
+  const Client = require('../src/client/Client.js');
+  const client = new Client({});
+  const calls = [];
+
+  // `GET /users/:id` là route bot-only, token người dùng ăn 403 code 40001.
+  client.rest.get = async route => {
+    calls.push(route);
+    if (!route.endsWith('/profile')) throw new Error(`route bot-only bi goi: ${route}`);
+    return { user: { id: '77', username: 'ai do', discriminator: '0', global_name: 'Ai Do' } };
+  };
+
+  const user = await client.users.fetch('77');
+
+  assert.deepStrictEqual(calls, ['/users/77/profile']);
+  assert.strictEqual(user.id, '77');
+  assert.strictEqual(user.username, 'ai do');
+
+  client.destroy();
+});
