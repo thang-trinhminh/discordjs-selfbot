@@ -8221,6 +8221,23 @@ export const SamsungActivityAction: {
 
 export const UserRoutes: Record<string, (...args: string[]) => string>;
 
+export interface TOTPOptions {
+  timestamp?: number;
+  digits?: number;
+  step?: number;
+}
+
+export function generateTOTP(secret: string, options?: TOTPOptions): string;
+export function decodeBase32(input: string): Buffer;
+
+export interface CaptchaError {
+  captcha_key?: string[];
+  captcha_sitekey?: string;
+  captcha_service?: string;
+  captcha_rqdata?: string;
+  captcha_rqtoken?: string;
+}
+
 export interface RelationshipJSONData {
   id: Snowflake;
   type: number;
@@ -8581,7 +8598,7 @@ export interface ClientOptions {
     headers?: Record<string, string>;
     agent?: string | Record<string, unknown> | null;
   };
-  captchaSolver?: ((captcha: unknown, userAgent: string) => Promise<string>) | null;
+  captchaSolver?: ((captcha: CaptchaError, userAgent: string) => Promise<string>) | null;
   captchaRetryLimit?: number;
 }
 

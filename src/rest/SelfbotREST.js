@@ -107,6 +107,47 @@ function buildDispatcher(clientOptions) {
 }
 
 /**
+ * Đọc hết body rồi dựng lại một `ResponseLike` phát lại được.
+ *
+ * Cần vì muốn biết có phải lỗi captcha không thì phải đọc body, mà đọc là tiêu
+ * luôn stream — `@discordjs/rest` ở tầng trên sẽ không còn gì để đọc.
+ * @param {Object} response Response gốc
+ * @returns {Promise<Object>} Response đọc lại được nhiều lần
+ */
+async function bufferResponse(response) {
+  const text = await response.text();
+
+  return {
+    body: null,
+    bodyUsed: false,
+    status: response.status,
+    statusText: response.statusText,
+    ok: response.ok,
+    headers: response.headers,
+    text: async () => text,
+    json: async () => JSON.parse(text),
+    arrayBuffer: async () => new TextEncoder().encode(text).buffer,
+  };
+}
+
+/**
+ * Bóc thông tin captcha từ body lỗi, `null` nếu đây không phải lỗi captcha.
+ * @param {string} text Body dạng chuỗi
+ * @returns {?Object}
+ */
+function parseCaptchaError(text) {
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    return null;
+  }
+
+  if (!data?.captcha_sitekey && !data?.captcha_key) return null;
+  return data;
+}
+
+/**
  * Tạo instance REST đã gắn shim selfbot.
  * @param {Object} clientOptions Options của client (đã merge default)
  * @returns {REST}
@@ -124,7 +165,37 @@ function createSelfbotREST(clientOptions) {
         return makeGatewayBotResponse();
       }
       if (token) rewriteAuthorization(init.headers, token);
-      return DefaultRestOptions.makeRequest(url, { ...init, dispatcher });
+
+      const send = requestInit => DefaultRestOptions.makeRequest(url, { ...requestInit, dispatcher });
+
+      let response = await send(init);
+      if (response.status !== 400 || !clientOptions.captchaSolver) return response;
+
+      // Chỉ lỗi 400 mới có thể là captcha, nên chỉ đọc lại body ở nhánh này.
+      response = await bufferResponse(response);
+
+      let currentInit = init;
+      for (let attempt = 0; attempt < clientOptions.captchaRetryLimit; attempt += 1) {
+        const captcha = parseCaptchaError(await response.text());
+        if (!captcha) return response;
+
+        const solution = await clientOptions.captchaSolver(captcha, currentInit.headers['user-agent']);
+
+        currentInit = {
+          ...currentInit,
+          headers: {
+            ...currentInit.headers,
+            'x-captcha-key': solution,
+            ...(captcha.captcha_rqtoken ? { 'x-captcha-rqtoken': captcha.captcha_rqtoken } : {}),
+          },
+        };
+
+        const retried = await send(currentInit);
+        if (retried.status !== 400) return retried;
+        response = await bufferResponse(retried);
+      }
+
+      return response;
     },
   });
 
@@ -139,6 +210,8 @@ function createSelfbotREST(clientOptions) {
 
 module.exports = {
   createSelfbotREST,
+  bufferResponse,
+  parseCaptchaError,
   buildSelfbotHeaders,
   rewriteAuthorization,
   buildDispatcher,

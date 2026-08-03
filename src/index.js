@@ -63,6 +63,8 @@ exports.Session = require('./structures/Session');
 exports.SpotifyRPC = require('./structures/RichPresence').SpotifyRPC;
 exports.WebEmbed = require('./structures/WebEmbed');
 exports.UserRoutes = require('./util/UserRoutes').UserRoutes;
+exports.generateTOTP = require('./util/totp').generateTOTP;
+exports.decodeBase32 = require('./util/totp').decodeBase32;
 
 // Managers
 exports.ApplicationCommandManager = require('./managers/ApplicationCommandManager');
