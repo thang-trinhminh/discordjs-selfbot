@@ -59,16 +59,16 @@ client.once('ready', async () => {
   });
 
   // Doc tu cache READY, khong ton request.
-  await check('relationships tu READY', () => {
+  await check('relationships from READY', () => {
     const { friendCache, blockedCache, incomingCache, outgoingCache } = client.relationships;
     return `friend=${friendCache.size} blocked=${blockedCache.size} in=${incomingCache.size} out=${outgoingCache.size}`;
   });
 
-  await check('guilds tu READY', () => `guilds=${client.guilds.cache.size} channels=${client.channels.cache.size}`);
+  await check('guilds from READY', () => `guilds=${client.guilds.cache.size} channels=${client.channels.cache.size}`);
 
-  await check('user_guild_settings da patch vao Guild', () => {
+  await check('user_guild_settings patched onto Guild', () => {
     const patched = client.guilds.cache.filter(guild => Object.keys(guild.settings.raw ?? {}).length > 0);
-    return `guild co setting=${patched.size}/${client.guilds.cache.size}`;
+    return `guilds with settings=${patched.size}/${client.guilds.cache.size}`;
   });
 
   await check('settings.fetch()', async () => {
@@ -86,14 +86,14 @@ client.once('ready', async () => {
     }`;
   });
 
-  await check('notes.fetch(ban be dau tien)', async () => {
+  await check('notes.fetch(first friend)', async () => {
     const friendId = client.relationships.friendCache.firstKey();
-    if (!friendId) return 'bo qua: khong co ban be trong cache';
+    if (!friendId) return 'skipped: no friend in cache';
     const note = await client.notes.fetch(friendId);
     return `note dai ${note.length} ky tu`;
   });
 
-  await check('users.fetch(chinh minh, force)', async () => {
+  await check('users.fetch(self, force)', async () => {
     const user = await client.users.fetch(client.user.id, { force: true });
     return `id khop=${user.id === client.user.id} bot=${user.bot}`;
   });
