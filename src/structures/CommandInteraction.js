@@ -76,7 +76,8 @@ class CommandInteraction extends BaseInteraction {
    */
   get command() {
     const id = this.commandId;
-    return this.guild?.commands.cache.get(id) ?? this.client.application.commands.cache.get(id) ?? null;
+    // `application` là null với tài khoản người dùng.
+    return this.guild?.commands.cache.get(id) ?? this.client.application?.commands.cache.get(id) ?? null;
   }
 
   /**

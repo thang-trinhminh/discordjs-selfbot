@@ -121,8 +121,9 @@ class MessageReaction {
     if (this._emoji instanceof ApplicationEmoji) return this._emoji;
     // Check to see if the emoji has become known to the client
     if (this._emoji.id) {
-      const applicationEmojis = this.message.client.application.emojis.cache;
-      if (applicationEmojis.has(this._emoji.id)) {
+      // Tài khoản người dùng không có `application`; upstream giả định luôn có.
+      const applicationEmojis = this.message.client.application?.emojis.cache;
+      if (applicationEmojis?.has(this._emoji.id)) {
         const emoji = applicationEmojis.get(this._emoji.id);
         this._emoji = emoji;
         return emoji;

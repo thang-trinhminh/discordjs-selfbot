@@ -104,8 +104,11 @@ class BaseInteraction extends Base {
      * The entitlements for the invoking user, representing access to premium SKUs
      * @type {Collection<Snowflake, Entitlement>}
      */
+    // Tài khoản người dùng không có `application` để cache entitlement vào, nên
+    // giữ nguyên dữ liệu thô thay vì ném.
     this.entitlements = data.entitlements.reduce(
-      (coll, entitlement) => coll.set(entitlement.id, this.client.application.entitlements._add(entitlement)),
+      (coll, entitlement) =>
+        coll.set(entitlement.id, this.client.application?.entitlements._add(entitlement) ?? entitlement),
       new Collection(),
     );
 

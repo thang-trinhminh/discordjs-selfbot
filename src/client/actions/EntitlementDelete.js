@@ -7,6 +7,10 @@ class EntitlementDeleteAction extends Action {
   handle(data) {
     const client = this.client;
 
+    // Entitlement thuộc về application. Tài khoản người dùng không có
+    // application nào, nên bỏ qua thay vì ném khi Discord vẫn đẩy event xuống.
+    if (!client.application) return {};
+
     const entitlement = client.application.entitlements._add(data, false);
 
     client.application.entitlements.cache.delete(entitlement.id);
