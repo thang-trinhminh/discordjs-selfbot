@@ -8230,6 +8230,18 @@ export interface TOTPOptions {
 export function generateTOTP(secret: string, options?: TOTPOptions): string;
 export function decodeBase32(input: string): Buffer;
 
+export class SpeakingBitField extends BitField<string> {
+  public static Flags: { Speaking: 1; Soundshare: 2; PrioritySpeaking: 4 };
+}
+
+export class PremiumUsageFlagsBitField extends BitField<string> {
+  public static Flags: { PremiumDiscriminator: 1; AnimatedAvatar: 2; ProfileBanner: 4 };
+}
+
+export class PurchasedFlagsBitField extends BitField<string> {
+  public static Flags: { NitroClassic: 1; Nitro: 2; GuildBoost: 4; NitroBasic: 8 };
+}
+
 export interface CaptchaError {
   captcha_key?: string[];
   captcha_sitekey?: string;
@@ -8600,6 +8612,8 @@ export interface ClientOptions {
   };
   captchaSolver?: ((captcha: CaptchaError, userAgent: string) => Promise<string>) | null;
   captchaRetryLimit?: number;
+  /** Tự chấp nhận Điều khoản dịch vụ và Chính sách quyền riêng tư mới. Mặc định `false`. */
+  autoAcceptAgreements?: boolean;
 }
 
 export interface ApplicationCommandSearchOptions {
@@ -8643,6 +8657,12 @@ export interface ClientEvents {
   channelRecipientAdd: [channel: GroupDMChannel, user: User];
   channelRecipientRemove: [channel: GroupDMChannel, user: User];
   interactionModalCreate: [modal: unknown];
+  userRequiredActionUpdate: [action: string | null, message: string];
+  voiceChannelStatusUpdate: [oldChannel: BaseChannel, newChannel: BaseChannel];
+  applicationCommandCreate: [command: ApplicationCommand];
+  applicationCommandUpdate: [command: ApplicationCommand];
+  applicationCommandDelete: [command: ApplicationCommand];
+  guildMemberSpeaking: [member: GuildMember, speaking: Readonly<SpeakingBitField>];
 }
 
 //#endregion

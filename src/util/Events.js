@@ -2,7 +2,12 @@
 
 /**
  * @typedef {Object} Events
+ * @property {string} ApplicationCommandCreate applicationCommandCreate
+ * @property {string} ApplicationCommandDelete applicationCommandDelete
  * @property {string} ApplicationCommandPermissionsUpdate applicationCommandPermissionsUpdate
+ * @property {string} ApplicationCommandUpdate applicationCommandUpdate
+ * @property {string} UserRequiredActionUpdate userRequiredActionUpdate
+ * @property {string} VoiceChannelStatusUpdate voiceChannelStatusUpdate
  * @property {string} AutoModerationActionExecution autoModerationActionExecution
  * @property {string} AutoModerationRuleCreate autoModerationRuleCreate
  * @property {string} AutoModerationRuleDelete autoModerationRuleDelete
@@ -109,7 +114,10 @@
  * @ignore
  */
 module.exports = {
+  ApplicationCommandCreate: 'applicationCommandCreate',
+  ApplicationCommandDelete: 'applicationCommandDelete',
   ApplicationCommandPermissionsUpdate: 'applicationCommandPermissionsUpdate',
+  ApplicationCommandUpdate: 'applicationCommandUpdate',
   AutoModerationActionExecution: 'autoModerationActionExecution',
   AutoModerationRuleCreate: 'autoModerationRuleCreate',
   AutoModerationRuleDelete: 'autoModerationRuleDelete',
@@ -203,8 +211,10 @@ module.exports = {
   ThreadUpdate: 'threadUpdate',
   TypingStart: 'typingStart',
   UserNoteUpdate: 'userNoteUpdate',
+  UserRequiredActionUpdate: 'userRequiredActionUpdate',
   UserUpdate: 'userUpdate',
   VoiceChannelEffectSend: 'voiceChannelEffectSend',
+  VoiceChannelStatusUpdate: 'voiceChannelStatusUpdate',
   VoiceServerUpdate: 'voiceServerUpdate',
   VoiceStateUpdate: 'voiceStateUpdate',
   Warn: 'warn',

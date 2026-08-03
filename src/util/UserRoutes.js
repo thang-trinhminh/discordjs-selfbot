@@ -101,6 +101,14 @@ const UserRoutes = {
   },
 
   /**
+   * Route chấp nhận Điều khoản dịch vụ và Chính sách quyền riêng tư.
+   * @returns {string}
+   */
+  agreements() {
+    return '/users/@me/agreements';
+  },
+
+  /**
    * Route đăng xuất.
    * @returns {string}
    */

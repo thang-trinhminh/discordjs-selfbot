@@ -138,6 +138,9 @@ class Options extends null {
         headers: {},
         agent: null,
       },
+      // Chấp nhận Điều khoản dịch vụ mới là hành động pháp lý nhân danh chủ
+      // tài khoản, nên mặc định tắt. Bản v13 làm việc này im lặng.
+      autoAcceptAgreements: false,
       captchaSolver: null,
       captchaRetryLimit: 3,
       rest: {
