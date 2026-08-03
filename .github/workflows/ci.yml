@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # 20.18 là sàn khai trong package.json; 22 và 24 để bắt sớm thứ sẽ hỏng.
+        node: ['20.18', '22', '24']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: node --test
+
+      - name: Typings
+        run: npm run test:typescript
+
+  upstream-drift:
+    # Đo phần đã lệch khỏi discord.js v14, để một PR vô tình sửa file upstream
+    # sẽ lộ ra trong log thay vì trôi qua.
+    #
+    # Chỉ để đọc, không chặn merge: đây là job cần mạng tới GitHub, hỏng mạng
+    # không có nghĩa là code sai.
+    continue-on-error: true
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lấy upstream ở đúng commit đã ghim
+        run: |
+          REF=$(grep -oP '(?<=\| Commit \| `)[0-9a-f]+' UPSTREAM.md)
+          echo "Base upstream: $REF"
+          git clone --filter=blob:none --no-checkout https://github.com/discordjs/discord.js.git /tmp/upstream
+          git -C /tmp/upstream fetch --depth 1 origin "$REF"
+          mkdir -p /tmp/base
+          git -C /tmp/upstream archive FETCH_HEAD packages/discord.js/src | tar -x -C /tmp/base
+
+      - name: Liệt kê file upstream đã sửa
+        run: |
+          echo "File upstream khac voi ban goc:"
+          diff -rq /tmp/base/packages/discord.js/src src | grep '^Files' | sed 's|.*/src/|  src/|; s| and .*||' || true
+          echo
+          echo "Doi chieu voi bang trong UPSTREAM.md."
