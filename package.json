@@ -10,7 +10,8 @@
     "lint:fix": "eslint --ext .js,.mjs src test scripts --fix",
     "format": "prettier --write \"src/**/*.js\" \"test/**/*.js\"",
     "test:typescript": "tsc --noEmit && tsd --files typings/index.test-d.ts && tsd --files typings/selfbot.test-d.ts",
-    "smoke:login": "node scripts/smoke/login.mjs"
+    "smoke:login": "node scripts/smoke/login.mjs",
+    "prepare": "husky"
   },
   "files": [
     "src",
@@ -50,6 +51,8 @@
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-prettier": "^5.5.6",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
     "prettier": "^3.9.6",
     "tsd": "^0.32.0",
     "typescript": "^5.5.4"

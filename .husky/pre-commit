@@ -1,0 +1,6 @@
+# Chỉ những thứ đủ nhanh để chạy mỗi lần commit.
+#
+# eslint chạy qua lint-staged nên chỉ soi file đang staged (~1s) thay vì cả repo
+# (~5s). Unit test không chạm mạng nên 1.7s là chấp nhận được.
+npx lint-staged
+node --test

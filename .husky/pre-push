@@ -1,0 +1,2 @@
+# Phần chậm, chạy một lần mỗi push chứ không mỗi commit: tsc 6s + tsd 12s.
+npm run test:typescript

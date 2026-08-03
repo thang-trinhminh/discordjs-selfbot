@@ -13,19 +13,19 @@ tài khoản người dùng, thay cho
 
 Đang phát triển, **chưa dùng cho việc thật**. Chưa publish lên npm.
 
-| Phần | Trạng thái |
-|---|---|
-| REST (spoof header, TLS fingerprint, proxy, captcha) | xong |
-| Gateway (identify cho tài khoản người dùng) | xong |
-| Quan hệ, phiên đăng nhập, ghi chú, cài đặt, thanh toán | xong |
-| Group DM, cuộc gọi | xong |
-| Custom status, rich presence, Spotify RPC | xong |
-| WebEmbed | xong |
-| Lớp tương thích v13 + codemod | xong |
-| TypeScript | xong |
-| Gửi interaction với tư cách user | xong |
-| Voice / video / Go Live | đã port, **chưa chứng minh** (xem ghi chú) |
-| Đăng nhập QR, đăng nhập mật khẩu (kèm 2FA) | xong |
+| Phần                                                   | Trạng thái                                 |
+| ------------------------------------------------------ | ------------------------------------------ |
+| REST (spoof header, TLS fingerprint, proxy, captcha)   | xong                                       |
+| Gateway (identify cho tài khoản người dùng)            | xong                                       |
+| Quan hệ, phiên đăng nhập, ghi chú, cài đặt, thanh toán | xong                                       |
+| Group DM, cuộc gọi                                     | xong                                       |
+| Custom status, rich presence, Spotify RPC              | xong                                       |
+| WebEmbed                                               | xong                                       |
+| Lớp tương thích v13 + codemod                          | xong                                       |
+| TypeScript                                             | xong                                       |
+| Gửi interaction với tư cách user                       | xong                                       |
+| Voice / video / Go Live                                | đã port, **chưa chứng minh** (xem ghi chú) |
+| Đăng nhập QR, đăng nhập mật khẩu (kèm 2FA)             | xong                                       |
 
 > [!IMPORTANT]
 > **Chưa chạy thử với token thật lần nào.** Toàn bộ kiểm thử hiện tại là unit
@@ -98,6 +98,17 @@ node --test           # unit test
 npm run test:typescript   # tsc + tsd
 npm test              # cả ba
 ```
+
+Git hook chạy sẵn qua husky, chia theo tốc độ:
+
+| Hook         | Chạy gì                                        | Mất  |
+| ------------ | ---------------------------------------------- | ---- |
+| `pre-commit` | lint-staged (chỉ file đang staged) + unit test | ~3s  |
+| `pre-push`   | `tsc` + hai bộ `tsd`                           | ~18s |
+
+Hook là lưới đỡ tại chỗ, **không thay được CI**: `--no-verify` bỏ qua được hết,
+hook chỉ chạy trên đúng bản Node của máy bạn, còn CI chạy ma trận 20.18/22/24
+cộng CodeQL và job đo lệch upstream.
 
 Quy ước: code dành cho tài khoản người dùng đi vào **file mới**; sửa file
 upstream là phương án cuối, và phải ghi vào bảng trong `UPSTREAM.md`.
