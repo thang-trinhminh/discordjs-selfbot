@@ -4,9 +4,10 @@ Run by hand against a real token, never in CI. This file records **check names,
 dates and pass/fail only** — return values (account tag, guild count, friend
 count, settings) stay on the console and are not written down.
 
-Times are UTC. One table, one row per check. Re-running a check overwrites its
-row and its date, so the table always shows the latest state rather than growing
-a block per run.
+Times are UTC. One table, one row per check, grouped by suite, with a tally at the
+top. Re-running a suite replaces every row it owns, so the table always shows the
+latest state rather than growing a block per run — and a check that gets renamed
+does not leave a ghost behind.
 
 ## What earlier runs found
 
@@ -154,6 +155,15 @@ mention them at all — absence there means untested, not passing.
 
 ## Results
 
+| Suite       | PASS | FAIL | SKIP |
+| ----------- | ---- | ---- | ---- |
+| write       | 15   | 0    | 5    |
+| readonly    | 16   | 0    | 0    |
+| message     | 16   | 0    | 0    |
+| voice       | 0    | 5    | 0    |
+| interaction | 2    | 0    | 2    |
+| groupdm     | 8    | 0    | 0    |
+
 | Date             | Suite       | Check                                                   | Result |
 | ---------------- | ----------- | ------------------------------------------------------- | ------ |
 | 2026-08-04 04:49 | write       | user.setAboutMe()                                       | SKIP   |
@@ -170,6 +180,12 @@ mention them at all — absence there means untested, not passing.
 | 2026-08-04 04:49 | write       | setPresence(RichPresence)                               | PASS   |
 | 2026-08-04 04:49 | write       | setPresence(SpotifyRPC)                                 | PASS   |
 | 2026-08-04 04:49 | write       | setPresence(clear)                                      | PASS   |
+| 2026-08-04 04:49 | write       | settings.addRestrictedGuild() + removeRestrictedGuild() | PASS   |
+| 2026-08-04 04:49 | write       | guild.settings.edit()                                   | PASS   |
+| 2026-08-04 04:49 | write       | RichPresence.getExternal()                              | PASS   |
+| 2026-08-04 04:49 | write       | gateway day nguoc packet cua cac thao tac vua ghi       | PASS   |
+| 2026-08-04 04:49 | write       | handler emit event tuong ung                            | PASS   |
+| 2026-08-04 04:49 | write       | setting tai khoan dong bo nguoc qua gateway             | SKIP   |
 | 2026-08-04 04:56 | readonly    | ready + client.user                                     | PASS   |
 | 2026-08-04 04:56 | readonly    | relationships from READY                                | PASS   |
 | 2026-08-04 04:56 | readonly    | guilds from READY                                       | PASS   |
@@ -184,6 +200,8 @@ mention them at all — absence there means untested, not passing.
 | 2026-08-04 04:56 | readonly    | user.fetchFriendInvites()                               | PASS   |
 | 2026-08-04 04:56 | readonly    | authorizedApplications()                                | PASS   |
 | 2026-08-04 04:56 | readonly    | channel.searchApplicationCommands()                     | PASS   |
+| 2026-08-04 04:56 | readonly    | users.fetch(friend, force)                              | PASS   |
+| 2026-08-04 04:56 | readonly    | relationships.fetch(user)                               | PASS   |
 | 2026-08-04 04:56 | message     | channel.send()                                          | PASS   |
 | 2026-08-04 04:56 | message     | messages.fetch()                                        | PASS   |
 | 2026-08-04 04:56 | message     | message.edit()                                          | PASS   |
@@ -195,19 +213,11 @@ mention them at all — absence there means untested, not passing.
 | 2026-08-04 04:56 | message     | awaitMessages()                                         | PASS   |
 | 2026-08-04 04:56 | message     | WebEmbed link duoc Discord unfurl                       | PASS   |
 | 2026-08-04 04:56 | message     | message.delete()                                        | PASS   |
-| 2026-08-04 04:49 | write       | settings.addRestrictedGuild() + removeRestrictedGuild() | PASS   |
-| 2026-08-04 04:49 | write       | guild.settings.edit()                                   | PASS   |
-| 2026-08-04 04:49 | write       | RichPresence.getExternal()                              | PASS   |
-| 2026-08-04 04:49 | write       | gateway day nguoc packet cua cac thao tac vua ghi       | PASS   |
-| 2026-08-04 04:49 | write       | handler emit event tuong ung                            | PASS   |
-| 2026-08-04 04:49 | write       | setting tai khoan dong bo nguoc qua gateway             | SKIP   |
 | 2026-08-04 04:56 | message     | refreshAttachmentURL()                                  | PASS   |
 | 2026-08-04 04:56 | message     | channel.setName()                                       | PASS   |
 | 2026-08-04 04:56 | message     | channel.setIcon()                                       | PASS   |
 | 2026-08-04 04:56 | message     | createInvite() + fetchInvites() + deleteInvite()        | PASS   |
 | 2026-08-04 04:56 | message     | channel.delete()                                        | PASS   |
-| 2026-08-04 04:56 | readonly    | users.fetch(friend, force)                              | PASS   |
-| 2026-08-04 04:56 | readonly    | relationships.fetch(user)                               | PASS   |
 | 2026-08-04 10:05 | voice       | voice.joinChannel()                                     | FAIL   |
 | 2026-08-04 10:05 | voice       | connection.playAudio()                                  | FAIL   |
 | 2026-08-04 10:05 | voice       | connection.createStreamConnection()                     | FAIL   |
@@ -219,11 +229,9 @@ mention them at all — absence there means untested, not passing.
 | 2026-08-04 10:50 | interaction | message.selectMenu()                                    | SKIP   |
 | 2026-08-04 11:21 | groupdm     | channel.addUser()                                       | PASS   |
 | 2026-08-04 11:21 | groupdm     | channel.fetchOwner()                                    | PASS   |
-| 2026-08-04 11:18 | groupdm     | channel.ring() + callCreate                             | FAIL   |
 | 2026-08-04 11:21 | groupdm     | CallState.setRTCRegion()                                | PASS   |
 | 2026-08-04 11:21 | groupdm     | user.stopRinging()                                      | PASS   |
 | 2026-08-04 11:21 | groupdm     | channel.removeUser()                                    | PASS   |
-| 2026-08-04 11:18 | groupdm     | callDelete sau khi cuoc goi ket thuc                    | SKIP   |
 | 2026-08-04 11:21 | groupdm     | mo cuoc goi bang voice state update + callCreate        | PASS   |
 | 2026-08-04 11:21 | groupdm     | channel.ring() + callUpdate                             | PASS   |
 | 2026-08-04 11:21 | groupdm     | roi cuoc goi + callDelete                               | PASS   |

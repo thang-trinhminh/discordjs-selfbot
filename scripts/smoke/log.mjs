@@ -39,11 +39,32 @@ export function appendResults(file, suite, results) {
     rows.set(`${cells[1]}|${cells[2]}`, cells);
   }
 
+  // Doi ten mot check se de lai dong cu mo coi, vi khoa upsert la ten. Xoa het
+  // dong cua suite nay roi ghi lai tu dau: lan chay sau cung la su that.
+  for (const key of [...rows.keys()]) {
+    if (key.startsWith(`${suite}|`)) rows.delete(key);
+  }
+
   for (const result of results) {
     rows.set(`${suite}|${result.name}`, [stamp, suite, result.name, result.status]);
   }
 
-  const table = [...rows.values()].map(cells => `| ${cells.join(' | ')} |`);
-  writeFileSync(file, `${before}\n\n${[...TABLE_HEADER, ...table].join('\n')}\n`);
+  // Gom theo suite cho de doc; trong mot suite giu nguyen thu tu chay.
+  const bySuite = new Map();
+  for (const cells of rows.values()) {
+    if (!bySuite.has(cells[1])) bySuite.set(cells[1], []);
+    bySuite.get(cells[1]).push(cells);
+  }
+
+  const ordered = [...bySuite.values()].flat();
+  const table = ordered.map(cells => `| ${cells.join(' | ')} |`);
+
+  const tally = [...bySuite.entries()].map(([name, cells]) => {
+    const count = status => cells.filter(row => row[3] === status).length;
+    return `| ${name} | ${count('PASS')} | ${count('FAIL')} | ${count('SKIP')} |`;
+  });
+
+  const summary = ['| Suite | PASS | FAIL | SKIP |', '| ----- | ---- | ---- | ---- |', ...tally];
+  writeFileSync(file, `${before}\n\n${[...summary, '', ...TABLE_HEADER, ...table].join('\n')}\n`);
   return stamp;
 }
