@@ -3,6 +3,7 @@
 const { ChannelType } = require('discord-api-types/v10');
 
 const VoiceConnection = require('./VoiceConnection');
+const DAVESessionModule = require('./networking/DAVESession');
 const Events = require('../../util/Events');
 
 /**
@@ -101,6 +102,10 @@ class ClientVoiceManager {
    * @returns {Promise<VoiceConnection>}
    */
   async joinChannel(channel, config = {}) {
+    // Không có davey thì voice gateway đóng bằng 4017 sau vài giây, và 4017 không
+    // nói cho ai biết phải cài gì. Chặn ở đây để câu lỗi còn dùng được.
+    if (DAVESessionModule.DAVE_PROTOCOL_VERSION === 0) throw new Error(DAVESessionModule.MISSING_DAVEY);
+
     channel = this.client.channels.resolve(channel);
 
     // `channel.joinable` hỏi quyền qua `guild.members.me`. Với tài khoản người

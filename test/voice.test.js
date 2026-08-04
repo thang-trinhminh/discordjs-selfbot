@@ -815,3 +815,25 @@ test('goi khong phai opus va loi parse di qua nguyen ven', () => {
   const failure = new Error('parse hong');
   assert.strictEqual(handler._daveDecrypt(failure, '333'), failure);
 });
+
+test('thieu davey thi joinChannel bao ro phai cai gi', async () => {
+  const DAVESessionModule = require('../src/client/voice/networking/DAVESession.js');
+  const ClientVoiceManager = require('../src/client/voice/ClientVoiceManager.js');
+
+  const client = new Client({});
+  const manager = new ClientVoiceManager(client);
+  const original = DAVESessionModule.DAVE_PROTOCOL_VERSION;
+
+  Object.defineProperty(DAVESessionModule, 'DAVE_PROTOCOL_VERSION', { value: 0, configurable: true });
+  try {
+    await assert.rejects(() => manager.joinChannel('444'), /@snazzah\/davey/);
+  } finally {
+    Object.defineProperty(DAVESessionModule, 'DAVE_PROTOCOL_VERSION', { value: original, configurable: true });
+    client.destroy();
+  }
+});
+
+test('davey co san thi khong chan joinChannel o buoc do', () => {
+  const { DAVE_PROTOCOL_VERSION } = require('../src/client/voice/networking/DAVESession.js');
+  assert.ok(DAVE_PROTOCOL_VERSION > 0, 'moi truong test phai co @snazzah/davey');
+});
