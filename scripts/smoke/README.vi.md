@@ -9,14 +9,16 @@ lệnh (tham số lộ ra trong `ps` và shell history).
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/write.mjs
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/message.mjs
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/voice.mjs
+    SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/interaction.mjs
 
-| Script         | Xác nhận                                                                                                                                                                                                             |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `login.mjs`    | P0-P2: REST shim + identify user account + gateway kết nối, `ready` bắn ra, `client.user` đúng                                                                                                                       |
-| `write.mjs`    | 20 check có ghi trong **một** phiên login. Mỗi check chụp giá trị hiện tại, ghi, đọc lại, trả lại, rồi đọc lại lần nữa. Trả lại thất bại thì dừng cả script và in giá trị gốc ra                                     |
-| `message.mjs`  | 16 check trong một group DM dùng một lần: gửi, fetch, sửa, trả lời, reaction, typing, ghim, đính kèm file, refresh attachment, collector, WebEmbed unfurl, xoá, và các thao tác quản lý kênh mà chủ nhóm tự làm được |
-| `voice.mjs`    | Vào voice channel, phát audio, Go Live, nhận tiếng, rời kênh. Hiện tại nó chỉ chứng minh được Discord chặn fork ở đâu — xem ghi chú dưới                                                                             |
-| `readonly.mjs` | 16 check chỉ đọc trong **một** phiên login: relationships, guild settings, settings, sessions, notes, profile, thanh toán, lời mời kết bạn, app đã cấp quyền, refresh attachment, tìm application command            |
+| Script            | Xác nhận                                                                                                                                                                                                             |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `login.mjs`       | P0-P2: REST shim + identify user account + gateway kết nối, `ready` bắn ra, `client.user` đúng                                                                                                                       |
+| `write.mjs`       | 20 check có ghi trong **một** phiên login. Mỗi check chụp giá trị hiện tại, ghi, đọc lại, trả lại, rồi đọc lại lần nữa. Trả lại thất bại thì dừng cả script và in giá trị gốc ra                                     |
+| `message.mjs`     | 16 check trong một group DM dùng một lần: gửi, fetch, sửa, trả lời, reaction, typing, ghim, đính kèm file, refresh attachment, collector, WebEmbed unfurl, xoá, và các thao tác quản lý kênh mà chủ nhóm tự làm được |
+| `voice.mjs`       | Vào voice channel, phát audio, Go Live, nhận tiếng, rời kênh. Hiện tại nó chỉ chứng minh được Discord chặn fork ở đâu — xem ghi chú dưới                                                                             |
+| `interaction.mjs` | Chạy slash command của bot khác với tư cách user: tìm lệnh, gửi, bấm nút, chọn select menu                                                                                                                           |
+| `readonly.mjs`    | 16 check chỉ đọc trong **một** phiên login: relationships, guild settings, settings, sessions, notes, profile, thanh toán, lời mời kết bạn, app đã cấp quyền, refresh attachment, tìm application command            |
 
 Kết quả nằm ở [`results.md`](results.md) — một bảng duy nhất, mỗi check một dòng kèm ngày chạy gần
 nhất. Chỉ có tên check, ngày và pass/fail, không có số liệu tài khoản.
@@ -38,6 +40,13 @@ là devDependency; bản thân lib không bundle cái nào, vì đó là lựa c
 channel là **cả server nhìn thấy**, khác mọi suite còn lại — chọn kênh vắng. Hiện nó fail ngay check
 đầu: Discord trả lời IDENTIFY voice bằng `4017 E2EE/DAVE protocol required` ở mọi version gateway, mà
 fork không biết nói DAVE.
+
+`interaction.mjs` nhận `SMOKE_INTERACTION_CHANNEL_ID`, điền id trần hoặc dán thẳng link kênh từ Discord
+đều được. Kênh phải có bot mà bạn được phép chạy lệnh. Mặc định script chỉ chọn lệnh không có tham số
+bắt buộc và tên nằm trong ping, help, about, info, stats, invite, uptime, version;
+`SMOKE_INTERACTION_COMMAND` ghim một lệnh cụ thể. Khác sandbox group DM, cái này **để lại dấu vết không
+xoá được**: Discord không cho thu hồi một lần gọi interaction, còn câu trả lời là tin của bot. Dùng kênh
+bot-spam.
 
 `SKIP` nghĩa là check không chạy được, không phải là pass. Ngoài chốt lời mời kết bạn ở trên,
 `refreshAttachmentURL()` cần `SMOKE_ATTACHMENT_URL` (một link `cdn.discordapp.com` đã hết hạn),

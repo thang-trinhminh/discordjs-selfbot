@@ -671,11 +671,18 @@ Ví dụ: [`examples/WebEmbed.js`](../examples/WebEmbed.js)
 Nguồn: [`src/util/InteractionSender.js`](../src/util/InteractionSender.js),
 [`src/structures/ChannelInteractionActions.js`](../src/structures/ChannelInteractionActions.js),
 [`src/structures/MessageInteractionActions.js`](../src/structures/MessageInteractionActions.js)
-· Trạng thái: **unit**, trừ `searchApplicationCommands()` là **tested**
+· Trạng thái: **tested** cho `searchApplicationCommands()` và `sendSlash()`;
+`clickButton`, `selectMenu`, modal submit, option kiểu attachment vẫn là **unit**
 
-> Route tìm lệnh thì trả lời được trên tài khoản thật. Còn gọi lệnh thật —
-> `sendSlash`, `clickButton`, `selectMenu`, modal submit, option kiểu attachment —
-> vẫn **chưa test**: cần một guild có bot mà tài khoản được phép chạy lệnh.
+> Với kênh trong **guild**, `searchApplicationCommands()` đọc index lệnh của guild
+> chứ không dùng `/channels/:id/application-commands/search`. Route search đó trả
+> `200` kèm danh sách rỗng ở mọi kênh guild — kể cả guild có hàng trăm lệnh, bất kể
+> `query`, `application_id` hay version API — nên xây trên nó thì `sendSlash` không
+> bao giờ tìm thấy lệnh. Kênh DM và group DM vẫn đi route search.
+
+> `clickButton` và `selectMenu` vẫn chưa chứng minh được với bot thật: câu trả lời
+> bộ smoke nhận về không có component nào. Trỏ `SMOKE_INTERACTION_COMMAND` vào một
+> lệnh mà bot trả về kèm nút để thử chúng.
 
 User account không _nhận_ được interaction, nhưng _gửi_ được: chạy slash command
 của bot khác, bấm nút, chọn select menu của nó.

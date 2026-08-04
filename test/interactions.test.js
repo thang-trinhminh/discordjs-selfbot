@@ -450,3 +450,37 @@ test('khong xin cho upload khi khong co file', async () => {
 
   client.destroy();
 });
+
+test('kenh trong guild tim lenh qua index cua guild, khong phai route search', async () => {
+  const { client, channel } = makeChannel(SEARCH_RESULT);
+  const routes = [];
+  const previous = client.rest.get;
+  client.rest.get = async (route, options) => {
+    routes.push(route);
+    return previous(route, options);
+  };
+
+  const data = await channel.searchApplicationCommands({ query: 'ping' });
+
+  // Route search theo kenh tra ve rong o moi kenh guild, ke ca guild co hang
+  // tram lenh — dung no thi sendSlash khong bao gio tim thay gi.
+  assert.deepStrictEqual(routes, ['/guilds/g1/application-command-index']);
+  assert.strictEqual(data.application_commands.length, 1);
+  assert.strictEqual(data.applications[0].id, 'app1');
+
+  client.destroy();
+});
+
+test('loc theo bot id chu khong chi application id', async () => {
+  const { client, channel } = makeChannel(SEARCH_RESULT);
+
+  const byBot = await channel.searchApplicationCommands({ applicationId: 'bot1' });
+  const byApp = await channel.searchApplicationCommands({ applicationId: 'app1' });
+  const unknown = await channel.searchApplicationCommands({ applicationId: 'khong-co' });
+
+  assert.strictEqual(byBot.application_commands.length, 1);
+  assert.strictEqual(byApp.application_commands.length, 1);
+  assert.strictEqual(unknown.application_commands.length, 0);
+
+  client.destroy();
+});

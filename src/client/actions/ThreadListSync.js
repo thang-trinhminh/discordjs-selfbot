@@ -22,12 +22,16 @@ class ThreadListSyncAction extends Action {
       }
     }
 
-    const syncedThreads = data.threads.reduce((coll, rawThread) => {
+    // Tài khoản người dùng nhận `THREAD_LIST_SYNC` ngay sau khi subscribe một
+    // guild (op 14, thứ client thật gửi mỗi lần mở server), và payload đó thiếu
+    // cả `threads` lẫn `members`. Upstream chỉ gặp bản của bot nên đọc thẳng, và
+    // ném ngay trong handler packet — đủ để giết cả client.
+    const syncedThreads = (data.threads ?? []).reduce((coll, rawThread) => {
       const thread = client.channels._add(rawThread);
       return coll.set(thread.id, thread);
     }, new Collection());
 
-    for (const rawMember of Object.values(data.members)) {
+    for (const rawMember of Object.values(data.members ?? {})) {
       // Discord sends the thread id as id in this object
       const thread = client.channels.cache.get(rawMember.id);
       if (thread) {

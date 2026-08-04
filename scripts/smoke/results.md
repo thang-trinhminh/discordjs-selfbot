@@ -126,7 +126,7 @@ mention them at all — absence there means untested, not passing.
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | **Voice, video, Go Live** — `playAudio`, `playVideo`, `createStreamConnection`, `joinStreamConnection`, `receiver.createStream`, `guildMemberSpeaking`        | Blocked, not merely untried: Discord closes the voice websocket with `4017 E2EE/DAVE protocol required` on every gateway version. `joinChannel` itself is now exercised and fails there by design | Implementing the DAVE protocol (MLS key exchange). Also needs `ffmpeg` and an Opus binding, neither bundled |
 | **Group DM with other people** — `addUser`, `removeUser`, `ring`, `setOwner`, `stopRinging`, `callCreate`/`callUpdate`/`callDelete`, `CallState.setRTCRegion` | Every one needs somebody else in the channel. Creating, renaming, re-iconing, inviting into and deleting the sandbox group DM are covered; nothing social is                                      | A second account that accepts being added to a group DM                                                     |
-| **Sending interactions** — `sendSlash`, `clickButton`, `selectMenu`, modal submit, attachment options                                                         | Needs another bot's commands to be usable in a channel the account can post in. `searchApplicationCommands` is tested, so the discovery route works; actually invoking one is not                 | A guild with a bot whose slash commands the account may run                                                 |
+| **Interaction components** — `clickButton`, `selectMenu`, modal submit, attachment options                                                                    | `searchApplicationCommands` and `sendSlash` are tested now. The reply the suite got back had no components, so there was nothing to click                                                         | A command whose answer carries buttons or a select menu, pinned through `SMOKE_INTERACTION_COMMAND`         |
 | **`acceptInvite`**                                                                                                                                            | Joining a guild is not undoable in the way the write suite requires, and leaving again is a separate visible action                                                                               | A throwaway guild to join and leave                                                                         |
 | **Profile writes** — `setAboutMe`, `setPronouns`, `setGlobalName`, `setAccentColor`                                                                           | `PATCH /users/@me` answers with an hCaptcha challenge. They appear as `SKIP` in the table below                                                                                                   | A `captchaSolver` configured on the client                                                                  |
 | **`logout`, `Session#logout`, `logoutAllDevices`**                                                                                                            | They invalidate the token or kill sessions, including the one running the test                                                                                                                    | A throwaway account                                                                                         |
@@ -136,62 +136,66 @@ mention them at all — absence there means untested, not passing.
 
 ## Results
 
-| Date             | Suite    | Check                                                   | Result |
-| ---------------- | -------- | ------------------------------------------------------- | ------ |
-| 2026-08-04 04:49 | write    | user.setAboutMe()                                       | SKIP   |
-| 2026-08-04 04:49 | write    | user.setPronouns()                                      | SKIP   |
-| 2026-08-04 04:49 | write    | user.setGlobalName()                                    | SKIP   |
-| 2026-08-04 04:49 | write    | user.setAccentColor()                                   | SKIP   |
-| 2026-08-04 04:49 | write    | settings.setTheme()                                     | PASS   |
-| 2026-08-04 04:49 | write    | settings.toggleCompactMode()                            | PASS   |
-| 2026-08-04 04:49 | write    | settings.setCustomStatus()                              | PASS   |
-| 2026-08-04 04:49 | write    | notes.updateNote()                                      | PASS   |
-| 2026-08-04 04:49 | write    | relationships.setNickname()                             | PASS   |
-| 2026-08-04 04:49 | write    | user.createFriendInvite() + revokeAllFriendInvites()    | PASS   |
-| 2026-08-04 04:49 | write    | setPresence(CustomStatus)                               | PASS   |
-| 2026-08-04 04:49 | write    | setPresence(RichPresence)                               | PASS   |
-| 2026-08-04 04:49 | write    | setPresence(SpotifyRPC)                                 | PASS   |
-| 2026-08-04 04:49 | write    | setPresence(clear)                                      | PASS   |
-| 2026-08-04 04:56 | readonly | ready + client.user                                     | PASS   |
-| 2026-08-04 04:56 | readonly | relationships from READY                                | PASS   |
-| 2026-08-04 04:56 | readonly | guilds from READY                                       | PASS   |
-| 2026-08-04 04:56 | readonly | user_guild_settings patched onto Guild                  | PASS   |
-| 2026-08-04 04:56 | readonly | settings.fetch()                                        | PASS   |
-| 2026-08-04 04:56 | readonly | sessions.fetch()                                        | PASS   |
-| 2026-08-04 04:56 | readonly | notes.fetch(first friend)                               | PASS   |
-| 2026-08-04 04:56 | readonly | users.fetch(self, force)                                | PASS   |
-| 2026-08-04 04:56 | readonly | billing.fetchPaymentSources()                           | PASS   |
-| 2026-08-04 04:56 | readonly | billing.fetchGuildBoosts()                              | PASS   |
-| 2026-08-04 04:56 | readonly | billing.fetchCurrentSubscription()                      | PASS   |
-| 2026-08-04 04:56 | readonly | user.fetchFriendInvites()                               | PASS   |
-| 2026-08-04 04:56 | readonly | authorizedApplications()                                | PASS   |
-| 2026-08-04 04:56 | readonly | channel.searchApplicationCommands()                     | PASS   |
-| 2026-08-04 04:56 | message  | channel.send()                                          | PASS   |
-| 2026-08-04 04:56 | message  | messages.fetch()                                        | PASS   |
-| 2026-08-04 04:56 | message  | message.edit()                                          | PASS   |
-| 2026-08-04 04:56 | message  | message.reply()                                         | PASS   |
-| 2026-08-04 04:56 | message  | message.react() + go reaction                           | PASS   |
-| 2026-08-04 04:56 | message  | channel.sendTyping()                                    | PASS   |
-| 2026-08-04 04:56 | message  | message.pin() + unpin()                                 | PASS   |
-| 2026-08-04 04:56 | message  | send kem file dinh kem                                  | PASS   |
-| 2026-08-04 04:56 | message  | awaitMessages()                                         | PASS   |
-| 2026-08-04 04:56 | message  | WebEmbed link duoc Discord unfurl                       | PASS   |
-| 2026-08-04 04:56 | message  | message.delete()                                        | PASS   |
-| 2026-08-04 04:49 | write    | settings.addRestrictedGuild() + removeRestrictedGuild() | PASS   |
-| 2026-08-04 04:49 | write    | guild.settings.edit()                                   | PASS   |
-| 2026-08-04 04:49 | write    | RichPresence.getExternal()                              | PASS   |
-| 2026-08-04 04:49 | write    | gateway day nguoc packet cua cac thao tac vua ghi       | PASS   |
-| 2026-08-04 04:49 | write    | handler emit event tuong ung                            | PASS   |
-| 2026-08-04 04:49 | write    | setting tai khoan dong bo nguoc qua gateway             | SKIP   |
-| 2026-08-04 04:56 | message  | refreshAttachmentURL()                                  | PASS   |
-| 2026-08-04 04:56 | message  | channel.setName()                                       | PASS   |
-| 2026-08-04 04:56 | message  | channel.setIcon()                                       | PASS   |
-| 2026-08-04 04:56 | message  | createInvite() + fetchInvites() + deleteInvite()        | PASS   |
-| 2026-08-04 04:56 | message  | channel.delete()                                        | PASS   |
-| 2026-08-04 04:56 | readonly | users.fetch(friend, force)                              | PASS   |
-| 2026-08-04 04:56 | readonly | relationships.fetch(user)                               | PASS   |
-| 2026-08-04 10:05 | voice    | voice.joinChannel()                                     | FAIL   |
-| 2026-08-04 10:05 | voice    | connection.playAudio()                                  | FAIL   |
-| 2026-08-04 10:05 | voice    | connection.createStreamConnection()                     | FAIL   |
-| 2026-08-04 10:05 | voice    | receiver.createStream()                                 | FAIL   |
-| 2026-08-04 10:05 | voice    | connection.disconnect()                                 | FAIL   |
+| Date             | Suite       | Check                                                   | Result |
+| ---------------- | ----------- | ------------------------------------------------------- | ------ |
+| 2026-08-04 04:49 | write       | user.setAboutMe()                                       | SKIP   |
+| 2026-08-04 04:49 | write       | user.setPronouns()                                      | SKIP   |
+| 2026-08-04 04:49 | write       | user.setGlobalName()                                    | SKIP   |
+| 2026-08-04 04:49 | write       | user.setAccentColor()                                   | SKIP   |
+| 2026-08-04 04:49 | write       | settings.setTheme()                                     | PASS   |
+| 2026-08-04 04:49 | write       | settings.toggleCompactMode()                            | PASS   |
+| 2026-08-04 04:49 | write       | settings.setCustomStatus()                              | PASS   |
+| 2026-08-04 04:49 | write       | notes.updateNote()                                      | PASS   |
+| 2026-08-04 04:49 | write       | relationships.setNickname()                             | PASS   |
+| 2026-08-04 04:49 | write       | user.createFriendInvite() + revokeAllFriendInvites()    | PASS   |
+| 2026-08-04 04:49 | write       | setPresence(CustomStatus)                               | PASS   |
+| 2026-08-04 04:49 | write       | setPresence(RichPresence)                               | PASS   |
+| 2026-08-04 04:49 | write       | setPresence(SpotifyRPC)                                 | PASS   |
+| 2026-08-04 04:49 | write       | setPresence(clear)                                      | PASS   |
+| 2026-08-04 04:56 | readonly    | ready + client.user                                     | PASS   |
+| 2026-08-04 04:56 | readonly    | relationships from READY                                | PASS   |
+| 2026-08-04 04:56 | readonly    | guilds from READY                                       | PASS   |
+| 2026-08-04 04:56 | readonly    | user_guild_settings patched onto Guild                  | PASS   |
+| 2026-08-04 04:56 | readonly    | settings.fetch()                                        | PASS   |
+| 2026-08-04 04:56 | readonly    | sessions.fetch()                                        | PASS   |
+| 2026-08-04 04:56 | readonly    | notes.fetch(first friend)                               | PASS   |
+| 2026-08-04 04:56 | readonly    | users.fetch(self, force)                                | PASS   |
+| 2026-08-04 04:56 | readonly    | billing.fetchPaymentSources()                           | PASS   |
+| 2026-08-04 04:56 | readonly    | billing.fetchGuildBoosts()                              | PASS   |
+| 2026-08-04 04:56 | readonly    | billing.fetchCurrentSubscription()                      | PASS   |
+| 2026-08-04 04:56 | readonly    | user.fetchFriendInvites()                               | PASS   |
+| 2026-08-04 04:56 | readonly    | authorizedApplications()                                | PASS   |
+| 2026-08-04 04:56 | readonly    | channel.searchApplicationCommands()                     | PASS   |
+| 2026-08-04 04:56 | message     | channel.send()                                          | PASS   |
+| 2026-08-04 04:56 | message     | messages.fetch()                                        | PASS   |
+| 2026-08-04 04:56 | message     | message.edit()                                          | PASS   |
+| 2026-08-04 04:56 | message     | message.reply()                                         | PASS   |
+| 2026-08-04 04:56 | message     | message.react() + go reaction                           | PASS   |
+| 2026-08-04 04:56 | message     | channel.sendTyping()                                    | PASS   |
+| 2026-08-04 04:56 | message     | message.pin() + unpin()                                 | PASS   |
+| 2026-08-04 04:56 | message     | send kem file dinh kem                                  | PASS   |
+| 2026-08-04 04:56 | message     | awaitMessages()                                         | PASS   |
+| 2026-08-04 04:56 | message     | WebEmbed link duoc Discord unfurl                       | PASS   |
+| 2026-08-04 04:56 | message     | message.delete()                                        | PASS   |
+| 2026-08-04 04:49 | write       | settings.addRestrictedGuild() + removeRestrictedGuild() | PASS   |
+| 2026-08-04 04:49 | write       | guild.settings.edit()                                   | PASS   |
+| 2026-08-04 04:49 | write       | RichPresence.getExternal()                              | PASS   |
+| 2026-08-04 04:49 | write       | gateway day nguoc packet cua cac thao tac vua ghi       | PASS   |
+| 2026-08-04 04:49 | write       | handler emit event tuong ung                            | PASS   |
+| 2026-08-04 04:49 | write       | setting tai khoan dong bo nguoc qua gateway             | SKIP   |
+| 2026-08-04 04:56 | message     | refreshAttachmentURL()                                  | PASS   |
+| 2026-08-04 04:56 | message     | channel.setName()                                       | PASS   |
+| 2026-08-04 04:56 | message     | channel.setIcon()                                       | PASS   |
+| 2026-08-04 04:56 | message     | createInvite() + fetchInvites() + deleteInvite()        | PASS   |
+| 2026-08-04 04:56 | message     | channel.delete()                                        | PASS   |
+| 2026-08-04 04:56 | readonly    | users.fetch(friend, force)                              | PASS   |
+| 2026-08-04 04:56 | readonly    | relationships.fetch(user)                               | PASS   |
+| 2026-08-04 10:05 | voice       | voice.joinChannel()                                     | FAIL   |
+| 2026-08-04 10:05 | voice       | connection.playAudio()                                  | FAIL   |
+| 2026-08-04 10:05 | voice       | connection.createStreamConnection()                     | FAIL   |
+| 2026-08-04 10:05 | voice       | receiver.createStream()                                 | FAIL   |
+| 2026-08-04 10:05 | voice       | connection.disconnect()                                 | FAIL   |
+| 2026-08-04 10:50 | interaction | searchApplicationCommands() liet ke lenh that           | PASS   |
+| 2026-08-04 10:50 | interaction | channel.sendSlash()                                     | PASS   |
+| 2026-08-04 10:50 | interaction | message.clickButton()                                   | SKIP   |
+| 2026-08-04 10:50 | interaction | message.selectMenu()                                    | SKIP   |

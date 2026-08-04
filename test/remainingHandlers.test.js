@@ -138,3 +138,20 @@ test('chi tu chap nhan dieu khoan khi bat tuong minh', async () => {
 
   client.destroy();
 });
+
+test('THREAD_LIST_SYNC chiu duoc payload thieu threads va members', () => {
+  const client = new Client({});
+  const guild = { id: 'g1', channels: { cache: new Map() } };
+  client.guilds.cache.set('g1', guild);
+
+  const handler = require('../src/client/websocket/handlers/THREAD_LIST_SYNC.js');
+  const seen = [];
+  client.on('threadListSync', (threads, syncedGuild) => seen.push([threads.size, syncedGuild.id]));
+
+  // Tai khoan nguoi dung nhan packet nay ngay sau khi subscribe guild (op 14),
+  // va payload khong co `threads` lan `members`. Upstream doc thang -> chet.
+  assert.doesNotThrow(() => handler(client, { d: { guild_id: 'g1' } }));
+  assert.deepStrictEqual(seen, [[0, 'g1']]);
+
+  client.destroy();
+});

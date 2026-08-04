@@ -15,7 +15,8 @@
     "prepare": "husky",
     "smoke:write": "node --env-file=.env scripts/smoke/write.mjs",
     "smoke:message": "node --env-file=.env scripts/smoke/message.mjs",
-    "smoke:voice": "node --env-file=.env scripts/smoke/voice.mjs"
+    "smoke:voice": "node --env-file=.env scripts/smoke/voice.mjs",
+    "smoke:interaction": "node --env-file=.env scripts/smoke/interaction.mjs"
   },
   "files": [
     "src",

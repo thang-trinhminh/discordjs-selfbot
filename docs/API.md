@@ -677,11 +677,19 @@ Example: [`examples/WebEmbed.js`](../examples/WebEmbed.js)
 Source: [`src/util/InteractionSender.js`](../src/util/InteractionSender.js),
 [`src/structures/ChannelInteractionActions.js`](../src/structures/ChannelInteractionActions.js),
 [`src/structures/MessageInteractionActions.js`](../src/structures/MessageInteractionActions.js)
-· Status: **unit**, except `searchApplicationCommands()` which is **tested**
+· Status: **tested** for `searchApplicationCommands()` and `sendSlash()`;
+`clickButton`, `selectMenu`, modal submit and attachment options are **unit**
 
-> The discovery route answers on a real account. Actually invoking a command —
-> `sendSlash`, `clickButton`, `selectMenu`, modal submit, attachment options — is
-> **untested**: it needs a guild with a bot whose commands the account may run.
+> In a **guild** channel, `searchApplicationCommands()` reads the guild's command
+> index rather than `/channels/:id/application-commands/search`. That search route
+> answers `200` with an empty list for every guild channel — even in a guild with
+> hundreds of commands, and regardless of `query`, `application_id` or API version —
+> so building on it meant `sendSlash` could never find a command. DM and group DM
+> channels still use the search route.
+
+> `clickButton` and `selectMenu` are still unproven against a real bot: the reply
+> the smoke suite got back carried no components. Point `SMOKE_INTERACTION_COMMAND`
+> at a command whose answer has buttons to exercise them.
 
 A user account cannot _receive_ interactions, but it can _send_ them: run
 another bot's slash command, click its buttons, pick from its select menus.

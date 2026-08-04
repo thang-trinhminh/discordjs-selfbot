@@ -56,7 +56,39 @@ const ChannelInteractionActions = {
    * @param {Snowflake} [options.applicationId] Chỉ lấy lệnh của một application
    * @returns {Promise<Object>} Payload thô, gồm `application_commands` và `applications`
    */
-  searchApplicationCommands({ query, limit = 25, applicationId } = {}) {
+  async searchApplicationCommands({ query, limit = 25, applicationId } = {}) {
+    // Kênh trong guild phải đi qua index của guild. Route search theo kênh trả
+    // về `200` với danh sách **rỗng** ở mọi kênh guild — kể cả guild có sẵn hàng
+    // trăm lệnh, kể cả khi ghim `application_id` hay truyền `query` thật — nên
+    // dùng nó ở đây thì `sendSlash` không bao giờ tìm thấy lệnh nào. Client thật
+    // cũng dựng danh sách gõ `/` từ index này.
+    if (this.guild) {
+      const data = await this.client.rest.get(UserRoutes.guildApplicationCommandIndex(this.guild.id));
+      const applications = data.applications ?? [];
+
+      // Người gọi thường cầm id của con bot, mà `application_id` trên lệnh là id
+      // của application. Route search để Discord tự khớp hai thứ đó; lọc tại chỗ
+      // thì phải tự làm.
+      const target = applicationId
+        ? applications.find(application => application.id === applicationId || application.bot_id === applicationId)
+        : null;
+      if (applicationId && !target) return { application_commands: [], applications: [] };
+
+      const kept = (data.application_commands ?? [])
+        .filter(
+          command =>
+            (!target || command.application_id === target.id) &&
+            (!query || command.name.startsWith(query) || command.name_default?.startsWith(query)),
+        )
+        .slice(0, limit);
+
+      const keptApplications = new Set(kept.map(command => command.application_id));
+      return {
+        application_commands: kept,
+        applications: applications.filter(application => keptApplications.has(application.id)),
+      };
+    }
+
     const search = new URLSearchParams({ type: '1', limit: String(limit), include_applications: 'true' });
     if (query) search.set('query', query);
     if (applicationId) search.set('application_id', applicationId);

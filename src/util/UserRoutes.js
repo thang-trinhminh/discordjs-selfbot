@@ -264,6 +264,18 @@ const UserRoutes = {
   },
 
   /**
+   * Route lấy toàn bộ application command của một guild.
+   *
+   * Route search theo kênh chỉ trả về rỗng với kênh trong guild — client thật
+   * dùng index này để dựng danh sách khi bạn gõ `/`.
+   * @param {Snowflake} guildId Id của guild
+   * @returns {string}
+   */
+  guildApplicationCommandIndex(guildId) {
+    return `/guilds/${guildId}/application-command-index`;
+  },
+
+  /**
    * Route tìm application command dùng được trong một kênh.
    * @param {Snowflake} channelId Id của kênh
    * @returns {string}

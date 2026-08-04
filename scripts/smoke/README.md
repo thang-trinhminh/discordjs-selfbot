@@ -10,14 +10,16 @@ history.
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/write.mjs
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/message.mjs
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/voice.mjs
+    SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/interaction.mjs
 
-| Script         | Proves                                                                                                                                                                                                               |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `login.mjs`    | P0-P2: REST shim + user account identify + gateway connect, `ready` fires, `client.user` is correct                                                                                                                  |
-| `write.mjs`    | Twenty write checks in **one** login. Every one snapshots the current value, writes, reads back, restores and reads back again. A failed restore stops the whole script and prints the original value                |
-| `message.mjs`  | Sixteen checks in a throwaway group DM: send, fetch, edit, reply, react, typing, pin, file upload, attachment refresh, collector, WebEmbed unfurl, delete, and the channel management the sandbox owner can do alone |
-| `voice.mjs`    | Joining a voice channel, playing audio, Go Live, receiving, leaving. Currently all it can prove is where Discord stops the fork — see the note below                                                                 |
-| `readonly.mjs` | Sixteen read-only checks in **one** login: relationships, guild settings, settings, sessions, notes, profile, billing, friend invites, authorized apps, attachment refresh, application-command search               |
+| Script            | Proves                                                                                                                                                                                                               |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `login.mjs`       | P0-P2: REST shim + user account identify + gateway connect, `ready` fires, `client.user` is correct                                                                                                                  |
+| `write.mjs`       | Twenty write checks in **one** login. Every one snapshots the current value, writes, reads back, restores and reads back again. A failed restore stops the whole script and prints the original value                |
+| `message.mjs`     | Sixteen checks in a throwaway group DM: send, fetch, edit, reply, react, typing, pin, file upload, attachment refresh, collector, WebEmbed unfurl, delete, and the channel management the sandbox owner can do alone |
+| `voice.mjs`       | Joining a voice channel, playing audio, Go Live, receiving, leaving. Currently all it can prove is where Discord stops the fork — see the note below                                                                 |
+| `interaction.mjs` | Running another bot's slash command as a user: search, send, click a button, pick from a select menu                                                                                                                 |
+| `readonly.mjs`    | Sixteen read-only checks in **one** login: relationships, guild settings, settings, sessions, notes, profile, billing, friend invites, authorized apps, attachment refresh, application-command search               |
 
 Results live in [`results.md`](./results.md) — one table, one row per check, with
 the date of the last run. Check names, dates and pass/fail only, no account data.
@@ -43,6 +45,14 @@ both are the consumer's choice). Joining a voice channel is **visible to the who
 server**, unlike every other suite — pick a quiet channel. It fails at the first
 check today: Discord answers the voice IDENTIFY with `4017 E2EE/DAVE protocol
 required` on every gateway version, and the fork does not speak DAVE.
+
+`interaction.mjs` takes `SMOKE_INTERACTION_CHANNEL_ID`, which accepts either a raw
+id or a channel link pasted straight out of Discord. The channel needs a bot whose
+commands you may run. By default the suite only picks a command with no required
+options whose name is one of ping, help, about, info, stats, invite, uptime or
+version; `SMOKE_INTERACTION_COMMAND` pins a specific one. Unlike the group DM
+sandbox, **this leaves a trace that cannot be removed**: Discord has no way to
+recall an interaction, and the answer belongs to the bot. Use a bot-spam channel.
 
 `SKIP` means the check could not run, not that it passed. Besides the friend-invite
 guard, `refreshAttachmentURL()` needs `SMOKE_ATTACHMENT_URL` (an expired
