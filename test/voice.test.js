@@ -837,3 +837,38 @@ test('davey co san thi khong chan joinChannel o buoc do', () => {
   const { DAVE_PROTOCOL_VERSION } = require('../src/client/voice/networking/DAVESession.js');
   assert.ok(DAVE_PROTOCOL_VERSION > 0, 'moi truong test phai co @snazzah/davey');
 });
+
+test('IDENTIFY co channel_id, thu voice gateway doi tu v9', () => {
+  const { websocket, sent } = makeVoiceWebSocket();
+
+  websocket.onOpen();
+
+  assert.strictEqual(JSON.parse(sent[0]).d.channel_id, '444');
+});
+
+test('VOICE_STATE_UPDATE cua nguoi khac khong dung vao ket noi cua minh', () => {
+  const ClientVoiceManager = require('../src/client/voice/ClientVoiceManager.js');
+
+  const client = new Client({});
+  client.user = { id: '111' };
+  const manager = new ClientVoiceManager(client);
+
+  let disconnected = false;
+  const sessionIds = [];
+  manager.connection = {
+    _disconnect: () => (disconnected = true),
+    disconnect: () => (disconnected = true),
+    setSessionId: id => sessionIds.push(id),
+  };
+
+  // Nguoi khac roi kenh: bap port cu goi _disconnect() va ngat ket noi cua ta.
+  manager.onVoiceStateUpdate({ guild_id: 'g', user_id: '999', session_id: 'cua-ho', channel_id: null });
+  assert.strictEqual(disconnected, false);
+  assert.strictEqual(manager.connection !== null, true);
+
+  // Nguoi khac vao kenh: ban port cu ghi de sessionId bang session cua ho.
+  manager.onVoiceStateUpdate({ guild_id: 'g', user_id: '999', session_id: 'cua-ho', channel_id: '444' });
+  assert.deepStrictEqual(sessionIds, []);
+
+  client.destroy();
+});

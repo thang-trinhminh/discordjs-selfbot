@@ -157,6 +157,7 @@ class VoiceWebSocket extends EventEmitter {
       op: VoiceOpcodes.IDENTIFY,
       d: {
         server_id: this.connection.serverId || this.connection.channel.guild?.id || this.connection.channel.id,
+        channel_id: this.connection.channel.id,
         user_id: this.client.user.id,
         token: this.connection.authentication.token,
         session_id: this.connection.authentication.sessionId,

@@ -72,6 +72,12 @@ class ClientVoiceManager {
     const connection = this.connection;
     this.client.emit('debug', `[VOICE] connection? ${!!connection}, ${guild_id} ${session_id} ${channel_id}`);
     if (!connection) return;
+
+    // Nhánh dưới đây nhận mọi VOICE_STATE_UPDATE của cả kênh, kể cả của người khác.
+    // Một người khác rời kênh (`channel_id` null) sẽ ngắt kết nối của ta, và một
+    // người khác vào kênh sẽ ghi đè `sessionId` bằng session của họ — đúng thứ voice
+    // gateway trả lời bằng 4006. Chỉ nghe trạng thái của chính mình.
+    if (payload.user_id !== this.client.user?.id) return;
     if (!channel_id) {
       connection._disconnect();
       this.connection = null;
