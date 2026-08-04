@@ -142,5 +142,15 @@ last resort and must be recorded in the `UPSTREAM.md` table.
 
 ## License
 
-Apache-2.0, following discord.js. See [`LICENSE`](./LICENSE) and
-[`NOTICE`](./NOTICE) for attribution of the original work.
+GPL-3.0-or-later. See [`LICENSE`](./LICENSE).
+
+This is a copyleft license: anything you build on top of this library and then
+distribute has to be released under the GPL-3.0 as well, with source.
+
+The license is GPL rather than Apache because the user-account voice stack under
+`src/client/voice/` is ported from
+[discord.js-selfbot-v13](https://github.com/aiko-chan-ai/discord.js-selfbot-v13),
+which is GPL-3.0. Everything inherited from
+[discord.js](https://github.com/discordjs/discord.js) remains available to you
+under Apache-2.0, whose text is kept in [`LICENSE-APACHE`](./LICENSE-APACHE).
+[`NOTICE`](./NOTICE) spells out the attribution for both upstreams.

@@ -144,5 +144,15 @@ upstream là phương án cuối, và phải ghi vào bảng trong `UPSTREAM.vi.
 
 ## Giấy phép
 
-Apache-2.0, theo discord.js. Xem [`LICENSE`](./LICENSE) và [`NOTICE`](./NOTICE)
-để biết phần ghi công cho tác phẩm gốc.
+GPL-3.0-or-later. Xem [`LICENSE`](./LICENSE).
+
+Đây là giấy phép copyleft: phần mềm bạn viết dựa trên thư viện này, nếu đem phân
+phối, cũng phải phát hành theo GPL-3.0 kèm mã nguồn.
+
+Sở dĩ là GPL chứ không phải Apache vì phần voice stack cho tài khoản người dùng
+nằm dưới `src/client/voice/` được port từ
+[discord.js-selfbot-v13](https://github.com/aiko-chan-ai/discord.js-selfbot-v13),
+vốn là GPL-3.0. Phần kế thừa từ
+[discord.js](https://github.com/discordjs/discord.js) vẫn đến tay bạn kèm giấy
+phép Apache-2.0, toàn văn nằm ở [`LICENSE-APACHE`](./LICENSE-APACHE).
+[`NOTICE`](./NOTICE) ghi rõ phần ghi công cho cả hai upstream.
