@@ -292,3 +292,192 @@ test('packBinary gan opcode mot byte, khong gan seq', () => {
   assert.strictEqual(packed.readUInt8(0), 26);
   assert.strictEqual(packed.subarray(1).toString('utf8'), 'key');
 });
+
+// Stub thay cho session MLS thật. Crypto của davey không phải việc của test này —
+// thứ cần khoá là máy trạng thái transition và các offset byte quanh nó.
+function makeDaveStub(overrides = {}) {
+  const calls = [];
+  return {
+    calls,
+    ready: true,
+    voicePrivacyCode: 'ABCDE',
+    getSerializedKeyPackage: () => Buffer.from('key-package'),
+    setExternalSender: buffer => calls.push(['setExternalSender', buffer.toString('utf8')]),
+    setPassthroughMode: (on, expiry) => calls.push(['setPassthroughMode', on, expiry]),
+    reinit: () => calls.push(['reinit']),
+    reset: () => calls.push(['reset']),
+    processProposals: (optype, proposals, users) => {
+      calls.push(['processProposals', optype, proposals.toString('utf8'), users]);
+      return { commit: Buffer.from('commit'), welcome: Buffer.from('welcome') };
+    },
+    processCommit: commit => calls.push(['processCommit', commit.toString('utf8')]),
+    processWelcome: welcome => calls.push(['processWelcome', welcome.toString('utf8')]),
+    encryptOpus: packet => Buffer.concat([Buffer.from('enc:'), packet]),
+    decrypt: (userId, mediaType, packet) => Buffer.concat([Buffer.from('dec:'), packet]),
+    canPassthrough: () => false,
+    ...overrides,
+  };
+}
+
+function makeDaveSession(overrides = {}, options = {}) {
+  const { DAVESession } = require('../src/client/voice/networking/DAVESession.js');
+  const session = new DAVESession(1, '111', '222', options);
+  const stub = makeDaveStub(overrides);
+  session.createSession = () => stub;
+  return { session, stub };
+}
+
+test('reinit tao session va phat key package', () => {
+  const { session, stub } = makeDaveSession();
+  const packages = [];
+  session.on('keyPackage', buffer => packages.push(buffer.toString('utf8')));
+
+  session.reinit();
+
+  assert.strictEqual(session.session, stub);
+  assert.deepStrictEqual(packages, ['key-package']);
+});
+
+test('prepareEpoch chi reinit o epoch 1', () => {
+  const { session } = makeDaveSession();
+  const packages = [];
+  session.on('keyPackage', buffer => packages.push(buffer.toString('utf8')));
+
+  session.prepareEpoch({ epoch: 2, protocol_version: 1 });
+  assert.deepStrictEqual(packages, []);
+
+  session.prepareEpoch({ epoch: 1, protocol_version: 1 });
+  assert.deepStrictEqual(packages, ['key-package']);
+});
+
+test('transition 0 thi hanh ngay, transition khac cho lenh', () => {
+  const { session } = makeDaveSession();
+  session.reinit();
+
+  assert.strictEqual(session.prepareTransition({ transition_id: 0, protocol_version: 1 }), false);
+  assert.strictEqual(session.lastTransitionId, 0);
+
+  assert.strictEqual(session.prepareTransition({ transition_id: 7, protocol_version: 1 }), true);
+  assert.strictEqual(session.lastTransitionId, 0);
+
+  assert.strictEqual(session.executeTransition(7), true);
+  assert.strictEqual(session.lastTransitionId, 7);
+});
+
+test('executeTransition bo qua transition khong duoc bao truoc', () => {
+  const { session } = makeDaveSession();
+  assert.strictEqual(session.executeTransition(99), false);
+});
+
+test('xuong v0 bat passthrough, len lai thi bat lai voi han ngan', () => {
+  const { session, stub } = makeDaveSession();
+  session.reinit();
+
+  session.prepareTransition({ transition_id: 1, protocol_version: 0 });
+  assert.deepStrictEqual(stub.calls.at(-1), ['setPassthroughMode', true, 24]);
+
+  session.executeTransition(1);
+  assert.strictEqual(session.protocolVersion, 0);
+
+  session.prepareTransition({ transition_id: 2, protocol_version: 1 });
+  session.executeTransition(2);
+  assert.strictEqual(session.protocolVersion, 1);
+  assert.deepStrictEqual(stub.calls.at(-1), ['setPassthroughMode', true, 10]);
+});
+
+test('processProposals tach optype o byte dau va gop commit voi welcome', () => {
+  const { session, stub } = makeDaveSession();
+  session.reinit();
+
+  const payload = Buffer.concat([Buffer.from([1]), Buffer.from('proposals')]);
+  const result = session.processProposals(payload, new Set(['111', '333']));
+
+  assert.deepStrictEqual(stub.calls.at(-1), ['processProposals', 1, 'proposals', ['111', '333']]);
+  assert.strictEqual(result.toString('utf8'), 'commitwelcome');
+});
+
+test('processProposals tra undefined khi khong co commit', () => {
+  const { session } = makeDaveSession({ processProposals: () => ({}) });
+  session.reinit();
+
+  assert.strictEqual(session.processProposals(Buffer.from([0]), new Set()), undefined);
+});
+
+test('processCommit doc transition id o hai byte dau', () => {
+  const { session, stub } = makeDaveSession();
+  session.reinit();
+
+  const payload = Buffer.concat([Buffer.from([0x00, 0x05]), Buffer.from('commit-body')]);
+  const result = session.processCommit(payload);
+
+  assert.deepStrictEqual(result, { transitionId: 5, success: true });
+  assert.deepStrictEqual(stub.calls.at(-1), ['processCommit', 'commit-body']);
+  assert.strictEqual(session.executeTransition(5), true);
+});
+
+test('processWelcome hong thi phat invalidateTransition', () => {
+  const { session } = makeDaveSession({
+    processWelcome: () => {
+      throw new Error('bad welcome');
+    },
+  });
+  session.reinit();
+
+  const invalidated = [];
+  session.on('invalidateTransition', id => invalidated.push(id));
+
+  const payload = Buffer.concat([Buffer.from([0x00, 0x09]), Buffer.from('welcome-body')]);
+  const result = session.processWelcome(payload);
+
+  assert.deepStrictEqual(result, { transitionId: 9, success: false });
+  assert.deepStrictEqual(invalidated, [9]);
+});
+
+test('silence frame di thang, khong ma hoa khong giai ma', () => {
+  const Silence = require('../src/client/voice/util/Silence.js');
+  const { session } = makeDaveSession();
+  session.reinit();
+
+  assert.strictEqual(session.encrypt(Silence.SILENCE_FRAME), Silence.SILENCE_FRAME);
+  assert.strictEqual(session.decrypt(Silence.SILENCE_FRAME, '333'), Silence.SILENCE_FRAME);
+});
+
+test('v0 khong ma hoa, v1 thi ma hoa', () => {
+  const { session } = makeDaveSession();
+  session.reinit();
+
+  assert.strictEqual(session.encrypt(Buffer.from('opus')).toString('utf8'), 'enc:opus');
+
+  session.protocolVersion = 0;
+  assert.strictEqual(session.encrypt(Buffer.from('opus')).toString('utf8'), 'opus');
+});
+
+test('decrypt hong duoi nguong thi bo goi, qua nguong thi recover', () => {
+  const { session } = makeDaveSession(
+    {
+      decrypt: () => {
+        throw new Error('nope');
+      },
+    },
+    { decryptionFailureTolerance: 2 },
+  );
+  session.reinit();
+  session.prepareTransition({ transition_id: 0, protocol_version: 1 });
+
+  const invalidated = [];
+  session.on('invalidateTransition', id => invalidated.push(id));
+
+  assert.strictEqual(session.decrypt(Buffer.from('a'), '333'), null);
+  assert.strictEqual(session.decrypt(Buffer.from('a'), '333'), null);
+  assert.deepStrictEqual(invalidated, []);
+
+  assert.strictEqual(session.decrypt(Buffer.from('a'), '333'), null);
+  assert.deepStrictEqual(invalidated, [0]);
+});
+
+test('decrypt thanh cong dat lai bo dem hong', () => {
+  const { session } = makeDaveSession();
+  session.reinit();
+
+  assert.strictEqual(session.decrypt(Buffer.from('opus'), '333').toString('utf8'), 'dec:opus');
+});
