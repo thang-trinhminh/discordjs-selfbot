@@ -467,11 +467,31 @@ const [{ refreshed }] = await client.refreshAttachmentURL(oldUrl);
 Source: [`src/structures/GroupDMChannel.js`](../src/structures/GroupDMChannel.js),
 [`src/structures/CallState.js`](../src/structures/CallState.js) · Status: **unit**
 
-> The message smoke suite builds a group DM as its sandbox, so `create`,
-> `setName`, `setIcon`, `createInvite`, `fetchInvites`, `deleteInvite` and `delete`
-> are **tested**. Everything that involves another person — `addUser`,
-> `removeUser`, `ring`, `setOwner`, `stopRinging` and the `call*` events — is
-> **untested**; it needs a second account.
+> **Tested** against a real account, with a second account for the parts that need
+> one: `create`, `setName`, `setIcon`, `createInvite`, `fetchInvites`,
+> `deleteInvite`, `delete`, `addUser`, `removeUser`, `fetchOwner`, `ring`,
+> `stopRinging`, `CallState.setRTCRegion`, and the `channelRecipientAdd`,
+> `channelRecipientRemove`, `callCreate`, `callUpdate`, `callDelete` events.
+> `setOwner` and `edit({ owner })` remain **untested**: handing the group over
+> cannot be undone.
+
+> **`ring()` does not start a call.** With no call in progress Discord answers
+> `{}` and nothing happens — no `CALL_CREATE`, nobody's phone rings. A call is
+> created by sending a voice state update naming the channel, which is what the
+> official client does when you press the call button; only then does `ring()` do
+> anything. This fork has no method for that first step, so you have to send the
+> gateway payload yourself:
+>
+> ```js
+> client.ws.shards
+>   .first()
+>   .send({ op: 4, d: { guild_id: null, channel_id: groupDm.id, self_mute: true, self_deaf: true } });
+> // wait for callCreate, then:
+> await groupDm.ring();
+> ```
+>
+> Hearing anything is a separate matter — the audio side goes through the voice
+> gateway, which is blocked; see [section 13](#13-voice-video-go-live).
 
 ```ts
 class GroupDMChannel extends BaseChannel {

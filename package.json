@@ -16,7 +16,8 @@
     "smoke:write": "node --env-file=.env scripts/smoke/write.mjs",
     "smoke:message": "node --env-file=.env scripts/smoke/message.mjs",
     "smoke:voice": "node --env-file=.env scripts/smoke/voice.mjs",
-    "smoke:interaction": "node --env-file=.env scripts/smoke/interaction.mjs"
+    "smoke:interaction": "node --env-file=.env scripts/smoke/interaction.mjs",
+    "smoke:groupdm": "node --env-file=.env scripts/smoke/groupdm.mjs"
   },
   "files": [
     "src",

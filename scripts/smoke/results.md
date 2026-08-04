@@ -112,6 +112,24 @@ does not work, and two of the three reasons were in the fork:
   `SKIP`: the stack really is broken against today's Discord, and a softer word
   would read as "we did not get around to it".
 
+Group DM with a second account passes end to end, and turned up an API gap rather
+than a bug:
+
+- **`ring()` cannot start a call.** With no call in progress Discord answers `{}`
+  and does nothing at all — no `CALL_CREATE`, no ringing. A call comes into being
+  when you send a voice state update naming the channel, which is what the real
+  client does when you press the call button; only then does `ring()` produce
+  `CALL_UPDATE` with the recipient listed. The fork exposes no method for that
+  first step, so the suite sends the gateway payload itself. Anyone using `ring()`
+  on its own will find it silently doing nothing.
+
+Ownership transfer is deliberately absent from the suite. `setOwner` cannot be
+undone — you cannot take the group back — and the cleanup step would only make the
+client leave, stranding the channel on the second account forever.
+
+The call itself is only signalling here. Actually hearing anything would need the
+voice gateway, which is blocked by DAVE.
+
 `SKIP` in the table below means the check could not run, not that it passed. The
 four profile writes are blocked by hCaptcha on `PATCH /users/@me`: the library
 behaves correctly by surfacing the `400`, and testing them needs a `captchaSolver`
@@ -122,17 +140,17 @@ configured on the client.
 Nothing below has ever run against Discord. The table further down does not
 mention them at all — absence there means untested, not passing.
 
-| Area                                                                                                                                                          | Why it is not in a suite                                                                                                                                                                          | What it would take                                                                                          |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Voice, video, Go Live** — `playAudio`, `playVideo`, `createStreamConnection`, `joinStreamConnection`, `receiver.createStream`, `guildMemberSpeaking`        | Blocked, not merely untried: Discord closes the voice websocket with `4017 E2EE/DAVE protocol required` on every gateway version. `joinChannel` itself is now exercised and fails there by design | Implementing the DAVE protocol (MLS key exchange). Also needs `ffmpeg` and an Opus binding, neither bundled |
-| **Group DM with other people** — `addUser`, `removeUser`, `ring`, `setOwner`, `stopRinging`, `callCreate`/`callUpdate`/`callDelete`, `CallState.setRTCRegion` | Every one needs somebody else in the channel. Creating, renaming, re-iconing, inviting into and deleting the sandbox group DM are covered; nothing social is                                      | A second account that accepts being added to a group DM                                                     |
-| **Interaction components** — `clickButton`, `selectMenu`, modal submit, attachment options                                                                    | `searchApplicationCommands` and `sendSlash` are tested now. The reply the suite got back had no components, so there was nothing to click                                                         | A command whose answer carries buttons or a select menu, pinned through `SMOKE_INTERACTION_COMMAND`         |
-| **`acceptInvite`**                                                                                                                                            | Joining a guild is not undoable in the way the write suite requires, and leaving again is a separate visible action                                                                               | A throwaway guild to join and leave                                                                         |
-| **Profile writes** — `setAboutMe`, `setPronouns`, `setGlobalName`, `setAccentColor`                                                                           | `PATCH /users/@me` answers with an hCaptcha challenge. They appear as `SKIP` in the table below                                                                                                   | A `captchaSolver` configured on the client                                                                  |
-| **`logout`, `Session#logout`, `logoutAllDevices`**                                                                                                            | They invalidate the token or kill sessions, including the one running the test                                                                                                                    | A throwaway account                                                                                         |
-| **`QRLogin`, `passLogin`**                                                                                                                                    | `QRLogin` needs a human to scan with a phone; `passLogin` needs the account password and reliably draws a captcha                                                                                 | Manual runs, and a solver for the password path                                                             |
-| **`redeemNitro`, `installUserApps`, `deauthorize`, `authorizeURL`, `setHypeSquad`, `setUsername`**                                                            | Cost money, change public state, or cannot be undone                                                                                                                                              | Deliberately left out; not planned                                                                          |
-| **Account settings arriving over the gateway**                                                                                                                | Discord sends `USER_SETTINGS_PROTO_UPDATE`, a protobuf payload the fork does not decode. Its JSON `USER_SETTINGS_UPDATE` handler never fires, so there is nothing to exercise                     | A protobuf decoder for `PreloadedUserSettings`; out of scope for now                                        |
+| Area                                                                                                                                                   | Why it is not in a suite                                                                                                                                                                          | What it would take                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **Voice, video, Go Live** — `playAudio`, `playVideo`, `createStreamConnection`, `joinStreamConnection`, `receiver.createStream`, `guildMemberSpeaking` | Blocked, not merely untried: Discord closes the voice websocket with `4017 E2EE/DAVE protocol required` on every gateway version. `joinChannel` itself is now exercised and fails there by design | Implementing the DAVE protocol (MLS key exchange). Also needs `ffmpeg` and an Opus binding, neither bundled |
+| **Group DM ownership** — `setOwner`, `edit({ owner })`                                                                                                 | Everything else in a group DM with a second account is tested now. Handing the group over cannot be undone, and cleanup would leave the channel stranded on the other account                     | A throwaway pair of accounts, run by hand                                                                   |
+| **Interaction components** — `clickButton`, `selectMenu`, modal submit, attachment options                                                             | `searchApplicationCommands` and `sendSlash` are tested now. The reply the suite got back had no components, so there was nothing to click                                                         | A command whose answer carries buttons or a select menu, pinned through `SMOKE_INTERACTION_COMMAND`         |
+| **`acceptInvite`**                                                                                                                                     | Joining a guild is not undoable in the way the write suite requires, and leaving again is a separate visible action                                                                               | A throwaway guild to join and leave                                                                         |
+| **Profile writes** — `setAboutMe`, `setPronouns`, `setGlobalName`, `setAccentColor`                                                                    | `PATCH /users/@me` answers with an hCaptcha challenge. They appear as `SKIP` in the table below                                                                                                   | A `captchaSolver` configured on the client                                                                  |
+| **`logout`, `Session#logout`, `logoutAllDevices`**                                                                                                     | They invalidate the token or kill sessions, including the one running the test                                                                                                                    | A throwaway account                                                                                         |
+| **`QRLogin`, `passLogin`**                                                                                                                             | `QRLogin` needs a human to scan with a phone; `passLogin` needs the account password and reliably draws a captcha                                                                                 | Manual runs, and a solver for the password path                                                             |
+| **`redeemNitro`, `installUserApps`, `deauthorize`, `authorizeURL`, `setHypeSquad`, `setUsername`**                                                     | Cost money, change public state, or cannot be undone                                                                                                                                              | Deliberately left out; not planned                                                                          |
+| **Account settings arriving over the gateway**                                                                                                         | Discord sends `USER_SETTINGS_PROTO_UPDATE`, a protobuf payload the fork does not decode. Its JSON `USER_SETTINGS_UPDATE` handler never fires, so there is nothing to exercise                     | A protobuf decoder for `PreloadedUserSettings`; out of scope for now                                        |
 
 ## Results
 
@@ -199,3 +217,13 @@ mention them at all — absence there means untested, not passing.
 | 2026-08-04 10:50 | interaction | channel.sendSlash()                                     | PASS   |
 | 2026-08-04 10:50 | interaction | message.clickButton()                                   | SKIP   |
 | 2026-08-04 10:50 | interaction | message.selectMenu()                                    | SKIP   |
+| 2026-08-04 11:21 | groupdm     | channel.addUser()                                       | PASS   |
+| 2026-08-04 11:21 | groupdm     | channel.fetchOwner()                                    | PASS   |
+| 2026-08-04 11:18 | groupdm     | channel.ring() + callCreate                             | FAIL   |
+| 2026-08-04 11:21 | groupdm     | CallState.setRTCRegion()                                | PASS   |
+| 2026-08-04 11:21 | groupdm     | user.stopRinging()                                      | PASS   |
+| 2026-08-04 11:21 | groupdm     | channel.removeUser()                                    | PASS   |
+| 2026-08-04 11:18 | groupdm     | callDelete sau khi cuoc goi ket thuc                    | SKIP   |
+| 2026-08-04 11:21 | groupdm     | mo cuoc goi bang voice state update + callCreate        | PASS   |
+| 2026-08-04 11:21 | groupdm     | channel.ring() + callUpdate                             | PASS   |
+| 2026-08-04 11:21 | groupdm     | roi cuoc goi + callDelete                               | PASS   |

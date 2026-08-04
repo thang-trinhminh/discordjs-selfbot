@@ -10,6 +10,7 @@ lệnh (tham số lộ ra trong `ps` và shell history).
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/message.mjs
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/voice.mjs
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/interaction.mjs
+    SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/groupdm.mjs
 
 | Script            | Xác nhận                                                                                                                                                                                                             |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -47,6 +48,11 @@ bắt buộc và tên nằm trong ping, help, about, info, stats, invite, uptime
 `SMOKE_INTERACTION_COMMAND` ghim một lệnh cụ thể. Khác sandbox group DM, cái này **để lại dấu vết không
 xoá được**: Discord không cho thu hồi một lần gọi interaction, còn câu trả lời là tin của bot. Dùng kênh
 bot-spam.
+
+`groupdm.mjs` nhận `SMOKE_SECOND_USER_ID` — id trần hoặc link profile. Account đó phải đã là **bạn bè**
+với account đang test: thêm người vào group DM là vào thẳng, và Discord chỉ cho làm giữa bạn bè. Script
+tự dựng và tự xoá sandbox, nhưng account kia sẽ thấy một group DM hiện lên rồi biến mất, và nghe đổ
+chuông vài giây. `setOwner` cố tình để ngoài: nhường quyền chủ nhóm không lấy lại được.
 
 `SKIP` nghĩa là check không chạy được, không phải là pass. Ngoài chốt lời mời kết bạn ở trên,
 `refreshAttachmentURL()` cần `SMOKE_ATTACHMENT_URL` (một link `cdn.discordapp.com` đã hết hạn),

@@ -11,6 +11,7 @@ history.
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/message.mjs
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/voice.mjs
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/interaction.mjs
+    SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/groupdm.mjs
 
 | Script            | Proves                                                                                                                                                                                                               |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -53,6 +54,13 @@ options whose name is one of ping, help, about, info, stats, invite, uptime or
 version; `SMOKE_INTERACTION_COMMAND` pins a specific one. Unlike the group DM
 sandbox, **this leaves a trace that cannot be removed**: Discord has no way to
 recall an interaction, and the answer belongs to the bot. Use a bot-spam channel.
+
+`groupdm.mjs` takes `SMOKE_SECOND_USER_ID` — a raw id or a profile link. That
+account must already be a **friend** of the one under test: adding someone to a
+group DM puts them straight in, and Discord only allows that between friends. It
+builds and deletes its own sandbox, but the other account will watch a group DM
+appear and vanish, and hear a few seconds of ringing. `setOwner` is left out on
+purpose: handing the group over cannot be undone.
 
 `SKIP` means the check could not run, not that it passed. Besides the friend-invite
 guard, `refreshAttachmentURL()` needs `SMOKE_ATTACHMENT_URL` (an expired

@@ -461,11 +461,30 @@ Nguồn: [`src/structures/GroupDMChannel.js`](../src/structures/GroupDMChannel.j
 [`src/structures/CallState.js`](../src/structures/CallState.js) · Trạng thái:
 **unit**
 
-> Bộ smoke tin nhắn dựng một group DM làm sandbox, nên `create`, `setName`,
-> `setIcon`, `createInvite`, `fetchInvites`, `deleteInvite` và `delete` đều
-> **tested**. Mọi thứ dính tới người khác — `addUser`, `removeUser`, `ring`,
-> `setOwner`, `stopRinging` và các event `call*` — vẫn **chưa test**; cần một tài
-> khoản thứ hai.
+> **Đã test** với tài khoản thật, kèm một account thứ hai cho phần cần người khác:
+> `create`, `setName`, `setIcon`, `createInvite`, `fetchInvites`, `deleteInvite`,
+> `delete`, `addUser`, `removeUser`, `fetchOwner`, `ring`, `stopRinging`,
+> `CallState.setRTCRegion`, và các event `channelRecipientAdd`,
+> `channelRecipientRemove`, `callCreate`, `callUpdate`, `callDelete`. Riêng
+> `setOwner` và `edit({ owner })` vẫn **chưa test**: nhường quyền chủ nhóm không
+> lấy lại được.
+
+> **`ring()` không tạo được cuộc gọi.** Không có cuộc gọi nào đang chạy thì Discord
+> trả `{}` và không xảy ra gì cả — không `CALL_CREATE`, không ai đổ chuông. Cuộc
+> gọi sinh ra khi gửi voice state update trỏ vào kênh, đúng thứ client chính thức
+> làm khi bạn bấm nút gọi; sau đó `ring()` mới có tác dụng. Fork không có method
+> cho bước đầu tiên đó, nên phải tự gửi payload gateway:
+>
+> ```js
+> client.ws.shards
+>   .first()
+>   .send({ op: 4, d: { guild_id: null, channel_id: groupDm.id, self_mute: true, self_deaf: true } });
+> // đợi callCreate, rồi:
+> await groupDm.ring();
+> ```
+>
+> Nghe được tiếng lại là chuyện khác — phần âm thanh đi qua voice gateway và đang
+> bị chặn, xem [mục 13](#13-voice-video-go-live).
 
 ```ts
 class GroupDMChannel extends BaseChannel {
