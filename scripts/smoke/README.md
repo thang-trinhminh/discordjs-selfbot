@@ -8,11 +8,13 @@ history.
 
     node --env-file=.env scripts/smoke/readonly.mjs
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/write.mjs
+    SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/message.mjs
 
 | Script         | Proves                                                                                                                                                                                                  |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `login.mjs`    | P0-P2: REST shim + user account identify + gateway connect, `ready` fires, `client.user` is correct                                                                                                     |
 | `write.mjs`    | Fourteen write checks in **one** login. Every one snapshots the current value, writes, reads back, restores and reads back again. A failed restore stops the whole script and prints the original value |
+| `message.mjs`  | Eleven message-lifecycle checks: send, fetch, edit, reply, react, typing, pin, file upload, collector, WebEmbed unfurl, delete                                                                          |
 | `readonly.mjs` | Fifteen read-only checks in **one** login: relationships, guild settings, settings, sessions, notes, profile, billing, friend invites, authorized apps, attachment refresh, application-command search  |
 
 Results live in [`results.md`](./results.md) — one table, one row per check, with
@@ -25,6 +27,13 @@ a public badge; Nitro redemption and app authorization cost money or cannot be
 undone. The friend-invite check skips itself unless the account currently has zero
 invites, since the only cleanup is `revokeAllFriendInvites()` and that would take
 pre-existing ones with it.
+
+`message.mjs` needs no channel of yours. It creates an empty group DM
+(`POST /users/@me/channels` with `recipients: []`), which nobody else is in, runs
+everything there and deletes the channel afterwards — including if a check throws
+half way. A DM with yourself is not an option; Discord answers `400`. Its WebEmbed
+check pushes the marker string through the third-party render service named in
+`WebEmbed.DEFAULT_BASE_URL`; set `SMOKE_SKIP_WEBEMBED=1` to leave that one out.
 
 `SKIP` means the check could not run, not that it passed. Besides the friend-invite
 guard, `refreshAttachmentURL()` needs `SMOKE_ATTACHMENT_URL` (an expired

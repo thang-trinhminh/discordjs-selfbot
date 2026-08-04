@@ -50,6 +50,19 @@ than in the checks:
   hand-made `{ code }` payload with no `channel` key at all and missed it the same
   way; it now uses the real shape.
 
+Tier 2.5 sent real messages for the first time, in a throwaway empty group DM, and
+found one more:
+
+- **A user token cannot fetch a single message.**
+  `GET /channels/:id/messages/:messageId` answers `403 code 20002`, "Only bots can
+  use this endpoint", while the list route with `around=<id>&limit=1` answers `200`
+  with that exact message. Six of the eleven checks failed on it at once, because
+  every one of them verified its work by reading the message back.
+  `MessageManager#_fetchSingle` now goes through the list route and still throws a
+  `10008` `DiscordAPIError` when the message is gone, so callers that catch that
+  code keep working. The `message.delete()` check had been passing for the wrong
+  reason — it treated any fetch error as proof of deletion, and 20002 is not that.
+
 `SKIP` in the table below means the check could not run, not that it passed. The
 four profile writes are blocked by hCaptcha on `PATCH /users/@me`: the library
 behaves correctly by surfacing the `400`, and testing them needs a `captchaSolver`
@@ -88,3 +101,14 @@ configured on the client.
 | 2026-08-04 03:50 | readonly | authorizedApplications()                             | PASS   |
 | 2026-08-04 03:50 | readonly | refreshAttachmentURL()                               | PASS   |
 | 2026-08-04 03:50 | readonly | channel.searchApplicationCommands()                  | PASS   |
+| 2026-08-04 04:23 | message  | channel.send()                                       | PASS   |
+| 2026-08-04 04:23 | message  | messages.fetch()                                     | PASS   |
+| 2026-08-04 04:23 | message  | message.edit()                                       | PASS   |
+| 2026-08-04 04:23 | message  | message.reply()                                      | PASS   |
+| 2026-08-04 04:23 | message  | message.react() + go reaction                        | PASS   |
+| 2026-08-04 04:23 | message  | channel.sendTyping()                                 | PASS   |
+| 2026-08-04 04:23 | message  | message.pin() + unpin()                              | PASS   |
+| 2026-08-04 04:23 | message  | send kem file dinh kem                               | PASS   |
+| 2026-08-04 04:23 | message  | awaitMessages()                                      | PASS   |
+| 2026-08-04 04:23 | message  | WebEmbed link duoc Discord unfurl                    | PASS   |
+| 2026-08-04 04:23 | message  | message.delete()                                     | PASS   |

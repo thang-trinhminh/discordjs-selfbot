@@ -20,9 +20,10 @@ sự thật. Các file chứa chúng nằm trong bảng lệch của
 
 `tested` gồm đăng nhập, toàn bộ phía đọc (relationships, settings, sessions,
 notes, fetch profile, thanh toán, lời mời kết bạn, application đã cấp quyền,
-route tìm application command) và những thao tác ghi trả lại được ngay trong cùng
-phiên: setting tài khoản và setting theo guild, custom status, note, nickname bạn
-bè, lời mời kết bạn và ba builder presence.
+route tìm application command), những thao tác ghi trả lại được ngay trong cùng
+phiên (setting tài khoản và setting theo guild, custom status, note, nickname bạn
+bè, lời mời kết bạn, ba builder presence) và vòng đời tin nhắn: gửi, fetch, sửa,
+trả lời, reaction, typing, ghim, đính kèm file, collector, WebEmbed và xoá.
 
 Vẫn là `unit` hoặc `ported`, nên coi như có thể hỏng với Discord hiện tại: mọi thứ
 vào guild, gửi interaction, mở kết nối voice, hoặc mất tiền. Bốn hàm sửa hồ sơ
@@ -611,7 +612,8 @@ Ví dụ: [`examples/RichPresence.js`](../examples/RichPresence.js)
 ## 11. WebEmbed
 
 Nguồn: [`src/structures/WebEmbed.js`](../src/structures/WebEmbed.js) · Trạng
-thái: **unit**
+thái: **tested** — link dựng ra đã gửi lên kênh thật và Discord unfurl thành
+embed đúng tiêu đề
 
 User account không gửi được embed thật. `WebEmbed` giả lập bằng cách dựng một
 link mà dịch vụ render biến thành OpenGraph preview, rồi Discord tự bung ra trong

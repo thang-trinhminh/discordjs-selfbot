@@ -13,7 +13,8 @@
     "smoke:login": "node scripts/smoke/login.mjs",
     "smoke:readonly": "node --env-file=.env scripts/smoke/readonly.mjs",
     "prepare": "husky",
-    "smoke:write": "node --env-file=.env scripts/smoke/write.mjs"
+    "smoke:write": "node --env-file=.env scripts/smoke/write.mjs",
+    "smoke:message": "node --env-file=.env scripts/smoke/message.mjs"
   },
   "files": [
     "src",

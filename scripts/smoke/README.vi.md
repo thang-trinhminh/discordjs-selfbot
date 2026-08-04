@@ -7,11 +7,13 @@ lệnh (tham số lộ ra trong `ps` và shell history).
 
     node --env-file=.env scripts/smoke/readonly.mjs
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/write.mjs
+    SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/message.mjs
 
 | Script         | Xác nhận                                                                                                                                                                                                  |
 | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `login.mjs`    | P0-P2: REST shim + identify user account + gateway kết nối, `ready` bắn ra, `client.user` đúng                                                                                                            |
 | `write.mjs`    | 14 check có ghi trong **một** phiên login. Mỗi check chụp giá trị hiện tại, ghi, đọc lại, trả lại, rồi đọc lại lần nữa. Trả lại thất bại thì dừng cả script và in giá trị gốc ra                          |
+| `message.mjs`  | 11 check vòng đời tin nhắn: gửi, fetch, sửa, trả lời, thả reaction, typing, ghim, đính kèm file, collector, WebEmbed unfurl, xoá                                                                          |
 | `readonly.mjs` | 15 check chỉ đọc trong **một** phiên login: relationships, guild settings, settings, sessions, notes, profile, thanh toán, lời mời kết bạn, app đã cấp quyền, refresh attachment, tìm application command |
 
 Kết quả nằm ở [`results.md`](results.md) — một bảng duy nhất, mỗi check một dòng kèm ngày chạy gần
@@ -22,6 +24,12 @@ không trả lại được: username, email và mật khẩu cần mật khẩu
 lần/giờ; HypeSquad để lại badge công khai; đổi Nitro và cấp quyền app thì mất tiền hoặc không hoàn
 tác được. Check lời mời kết bạn tự skip trừ khi tài khoản đang có đúng 0 lời mời, vì cách dọn duy
 nhất là `revokeAllFriendInvites()` và nó xoá cả những lời mời có từ trước.
+
+`message.mjs` không cần kênh nào của bạn. Nó tự tạo một group DM rỗng (`POST /users/@me/channels` với
+`recipients: []`), không có ai khác trong đó, chạy hết check ở đấy rồi xoá kênh — kể cả khi giữa chừng
+có check ném lỗi. DM với chính mình thì không dùng được, Discord trả `400`. Check WebEmbed đẩy chuỗi
+marker qua dịch vụ render bên thứ ba ghi trong `WebEmbed.DEFAULT_BASE_URL`; đặt `SMOKE_SKIP_WEBEMBED=1`
+để bỏ check đó.
 
 `SKIP` nghĩa là check không chạy được, không phải là pass. Ngoài chốt lời mời kết bạn ở trên,
 `refreshAttachmentURL()` cần `SMOKE_ATTACHMENT_URL` (một link `cdn.discordapp.com` đã hết hạn),

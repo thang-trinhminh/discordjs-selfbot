@@ -21,9 +21,11 @@ files they live in are the ones listed in the divergence table of
 
 `tested` covers login, the whole read side (relationships, settings, sessions,
 notes, profile fetching, billing, friend invites, authorized applications, the
-application-command search route) and the writes that can be undone in the same
-session: account and per-guild settings, custom status, notes, friend nicknames,
-friend invites and the three presence builders.
+application-command search route), the writes that can be undone in the same
+session (account and per-guild settings, custom status, notes, friend nicknames,
+friend invites, the three presence builders) and the message lifecycle: send,
+fetch, edit, reply, react, typing, pin, file upload, collectors, WebEmbed and
+delete.
 
 Still `unit` or `ported`, so assume they can fail against today's Discord:
 everything that joins a guild, sends an interaction, opens a voice connection, or
@@ -616,7 +618,8 @@ Example: [`examples/RichPresence.js`](../examples/RichPresence.js)
 ## 11. WebEmbed
 
 Source: [`src/structures/WebEmbed.js`](../src/structures/WebEmbed.js) · Status:
-**unit**
+**tested** — a built link was sent to a real channel and Discord unfurled it into
+an embed with the right title
 
 User accounts cannot send real embeds. `WebEmbed` fakes one by building a link
 that a rendering service turns into an OpenGraph preview, which Discord then

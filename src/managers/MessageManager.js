@@ -2,7 +2,7 @@
 
 const process = require('node:process');
 const { Collection } = require('@discordjs/collection');
-const { makeURLSearchParams } = require('@discordjs/rest');
+const { DiscordAPIError, makeURLSearchParams } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v10');
 const CachedManager = require('./CachedManager');
 const { DiscordjsTypeError, ErrorCodes } = require('../errors');
@@ -107,8 +107,20 @@ class MessageManager extends CachedManager {
       if (existing && !existing.partial) return existing;
     }
 
-    const data = await this.client.rest.get(Routes.channelMessage(this.channel.id, message));
-    return this._add(data, cache);
+    // `GET /channels/:id/messages/:messageId` là route bot-only: token người dùng
+    // ăn 403 code 20002. Route liệt kê thì dùng được, nên lấy đúng một tin quanh
+    // id cần tìm rồi tự lọc.
+    const data = await this.client.rest.get(Routes.channelMessages(this.channel.id), {
+      query: makeURLSearchParams({ around: message, limit: 1 }),
+    });
+
+    const found = data.find(item => item.id === message);
+    if (found) return this._add(found, cache);
+
+    // Tin không tồn tại. Ném đúng lỗi mà route bot-only sẽ trả về, để code bắt
+    // `code === 10008` vẫn chạy như cũ.
+    const route = Routes.channelMessage(this.channel.id, message);
+    throw new DiscordAPIError({ message: 'Unknown Message', code: 10008 }, 10008, 404, 'GET', route, {});
   }
 
   async _fetchMany({ cache, ...apiOptions } = {}) {
