@@ -36,6 +36,20 @@ if (getCiphers().includes('aes-256-gcm')) {
 const SUPPORTED_CODECS = ['VP8', 'H264'];
 
 /**
+ * Payload mà Go Live nhét thêm vào IDENTIFY.
+ *
+ * Bản port cũ gửi nó trong **mọi** IDENTIFY, kể cả voice thường, thứ Discord không
+ * hề đòi. Trả về object mới mỗi lần để không ai sửa được bản dùng chung.
+ * @returns {Object}
+ */
+function goLiveIdentifyExtras() {
+  return {
+    streams: [{ type: 'screen', rid: '100', quality: 100 }],
+    video: true,
+  };
+}
+
+/**
  * Represents a connection to a guild's voice server.
  * ```js
  * // Obtained using:
@@ -1078,16 +1092,13 @@ class StreamConnection extends VoiceConnection {
   }
 
   /**
-   * Go Live khai luồng ngay trong IDENTIFY. Đây là nơi duy nhất payload đó thuộc về.
+   * Go Live khai luồng ngay trong IDENTIFY.
    * @type {Object}
    * @readonly
    * @private
    */
   get identifyExtras() {
-    return {
-      streams: [{ type: 'screen', rid: '100', quality: 100 }],
-      video: true,
-    };
+    return goLiveIdentifyExtras();
   }
 
   get streamConnection() {
@@ -1222,6 +1233,19 @@ class StreamConnection extends VoiceConnection {
  */
 class StreamConnectionReadonly extends VoiceConnection {
   #requestDisconnect = false;
+
+  /**
+   * Xem Go Live cũng đi qua luồng stream, nên giữ nguyên payload IDENTIFY mà bản
+   * port vẫn gửi. Đường này chưa từng chạy được lần nào, nên không có gì để đối
+   * chiếu nếu đổi — đổi ở đây là đoán mò, không phải sửa.
+   * @type {Object}
+   * @readonly
+   * @private
+   */
+  get identifyExtras() {
+    return goLiveIdentifyExtras();
+  }
+
   /**
    * @param {ClientVoiceManager} voiceManager Voice manager
    * @param {Channel} channel any channel (joinable)
@@ -1385,3 +1409,4 @@ module.exports = VoiceConnection;
 // `StreamConnection` vốn là lớp riêng của module. Gắn ra ngoài để test khoá được
 // phần IDENTIFY của Go Live, thứ dễ hỏng nhất khi tách `streams` khỏi voice thường.
 module.exports.StreamConnection = StreamConnection;
+module.exports.StreamConnectionReadonly = StreamConnectionReadonly;

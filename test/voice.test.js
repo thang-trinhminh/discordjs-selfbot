@@ -617,17 +617,25 @@ function makeVoiceConnection() {
   return { connection, sentBinary, sentPackets };
 }
 
-test('identifyExtras rong o voice thuong, co payload Go Live o StreamConnection', () => {
+test('identifyExtras rong o voice thuong, co payload Go Live o ca hai lop stream', () => {
   const VoiceConnection = require('../src/client/voice/VoiceConnection.js');
-  const { StreamConnection } = VoiceConnection;
+  const { StreamConnection, StreamConnectionReadonly } = VoiceConnection;
 
   assert.deepStrictEqual(Object.create(VoiceConnection.prototype).identifyExtras, {});
 
-  const extras = Object.create(StreamConnection.prototype).identifyExtras;
-  assert.strictEqual(extras.video, true);
-  assert.strictEqual(extras.streams[0].type, 'screen');
-  assert.strictEqual(extras.streams[0].rid, '100');
-  assert.strictEqual(extras.streams[0].quality, 100);
+  // Ca phat lan xem Go Live deu phai giu nguyen payload cu; doi la doan mo.
+  for (const Klass of [StreamConnection, StreamConnectionReadonly]) {
+    const extras = Object.create(Klass.prototype).identifyExtras;
+    assert.strictEqual(extras.video, true, Klass.name);
+    assert.strictEqual(extras.streams[0].type, 'screen', Klass.name);
+    assert.strictEqual(extras.streams[0].rid, '100', Klass.name);
+    assert.strictEqual(extras.streams[0].quality, 100, Klass.name);
+  }
+
+  // Object moi moi lan, khong dung chung ban co the bi sua.
+  const first = Object.create(StreamConnection.prototype).identifyExtras;
+  const second = Object.create(StreamConnection.prototype).identifyExtras;
+  assert.notStrictEqual(first.streams, second.streams);
 });
 
 test('createDaveSession bo qua khi server khai phien ban 0', () => {
