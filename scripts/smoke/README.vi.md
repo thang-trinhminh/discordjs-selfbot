@@ -8,12 +8,14 @@ lệnh (tham số lộ ra trong `ps` và shell history).
     node --env-file=.env scripts/smoke/readonly.mjs
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/write.mjs
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/message.mjs
+    SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/voice.mjs
 
 | Script         | Xác nhận                                                                                                                                                                                                             |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `login.mjs`    | P0-P2: REST shim + identify user account + gateway kết nối, `ready` bắn ra, `client.user` đúng                                                                                                                       |
 | `write.mjs`    | 20 check có ghi trong **một** phiên login. Mỗi check chụp giá trị hiện tại, ghi, đọc lại, trả lại, rồi đọc lại lần nữa. Trả lại thất bại thì dừng cả script và in giá trị gốc ra                                     |
 | `message.mjs`  | 16 check trong một group DM dùng một lần: gửi, fetch, sửa, trả lời, reaction, typing, ghim, đính kèm file, refresh attachment, collector, WebEmbed unfurl, xoá, và các thao tác quản lý kênh mà chủ nhóm tự làm được |
+| `voice.mjs`    | Vào voice channel, phát audio, Go Live, nhận tiếng, rời kênh. Hiện tại nó chỉ chứng minh được Discord chặn fork ở đâu — xem ghi chú dưới                                                                             |
 | `readonly.mjs` | 16 check chỉ đọc trong **một** phiên login: relationships, guild settings, settings, sessions, notes, profile, thanh toán, lời mời kết bạn, app đã cấp quyền, refresh attachment, tìm application command            |
 
 Kết quả nằm ở [`results.md`](results.md) — một bảng duy nhất, mỗi check một dòng kèm ngày chạy gần
@@ -30,6 +32,12 @@ nhất là `revokeAllFriendInvites()` và nó xoá cả những lời mời có 
 có check ném lỗi. DM với chính mình thì không dùng được, Discord trả `400`. Check WebEmbed đẩy chuỗi
 marker qua dịch vụ render bên thứ ba ghi trong `WebEmbed.DEFAULT_BASE_URL`; đặt `SMOKE_SKIP_WEBEMBED=1`
 để bỏ check đó.
+
+`voice.mjs` cần `SMOKE_VOICE_CHANNEL_ID`, `ffmpeg` trong `PATH`, và một binding Opus (ở đây `opusscript`
+là devDependency; bản thân lib không bundle cái nào, vì đó là lựa chọn của người dùng). Vào voice
+channel là **cả server nhìn thấy**, khác mọi suite còn lại — chọn kênh vắng. Hiện nó fail ngay check
+đầu: Discord trả lời IDENTIFY voice bằng `4017 E2EE/DAVE protocol required` ở mọi version gateway, mà
+fork không biết nói DAVE.
 
 `SKIP` nghĩa là check không chạy được, không phải là pass. Ngoài chốt lời mời kết bạn ở trên,
 `refreshAttachmentURL()` cần `SMOKE_ATTACHMENT_URL` (một link `cdn.discordapp.com` đã hết hạn),

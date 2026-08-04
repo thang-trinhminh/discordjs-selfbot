@@ -1,7 +1,9 @@
 'use strict';
 
 const assert = require('node:assert');
+const EventEmitter = require('node:events');
 const { test } = require('node:test');
+const { setTimeout: sleep } = require('node:timers/promises');
 const { ChannelType } = require('discord-api-types/v10');
 const Client = require('../src/client/Client.js');
 const { mergeDefault } = require('../src/client/voice/util/MergeDefault.js');
@@ -115,6 +117,46 @@ test('mergeDefault sua truc tiep given, khong sua def', () => {
   assert.strictEqual(defaults.nested.x, 1, 'khong duoc sua object mac dinh');
 });
 
+test('joinChannel nap member cua chinh minh truoc khi hoi joinable', async () => {
+  const client = new Client({});
+  let fetched = null;
+  let joinable = false;
+
+  // Tai khoan nguoi dung khong duoc READY seed member cua chinh no, nen
+  // `members.me` la null va `joinable` false — moi lan vao voice channel trong
+  // guild deu bi chan ngay o cong nay.
+  const guild = {
+    members: {
+      me: null,
+      fetch: async id => {
+        fetched = id;
+        guild.members.me = { id };
+        joinable = true;
+        return guild.members.me;
+      },
+    },
+  };
+
+  const channel = {
+    id: '900',
+    guild,
+    get joinable() {
+      return joinable;
+    },
+  };
+
+  client.channels.resolve = () => channel;
+  client.user = { id: '1' };
+
+  // Chi quan tam den cong kiem tra quyen: cho no vao toi buoc dung voice thi thoi.
+  await assert.rejects(client.voice.joinChannel(channel), error => error.message !== 'VOICE_JOIN_CHANNEL');
+
+  assert.strictEqual(fetched, '1');
+  assert.strictEqual(joinable, true);
+
+  client.destroy();
+});
+
 test('client.voice la ClientVoiceManager da port', () => {
   const client = new Client({});
   const ClientVoiceManager = require('../src/client/voice/ClientVoiceManager.js');
@@ -166,4 +208,38 @@ test('nhan dien DM va group DM bang enum so, khong phai chuoi v13', async () => 
 test('speaking event dung ten kieu v14', () => {
   const Events = require('../src/util/Events.js');
   assert.strictEqual(Events.GuildMemberSpeaking, 'guildMemberSpeaking');
+});
+
+test('websocket voice khong reconnect vo ich khi ma dong la vinh vien', async () => {
+  const VoiceWebSocket = require('../src/client/voice/networking/VoiceWebSocket.js');
+  const socket = Object.create(VoiceWebSocket.prototype);
+  EventEmitter.call(socket);
+  socket.dead = false;
+  socket.attempts = 1;
+
+  let reconnects = 0;
+  socket.connect = () => reconnects++;
+
+  const errors = [];
+  socket.on('error', error => errors.push(error));
+  socket.on('debug', () => {});
+
+  // 4017 la Discord doi DAVE (E2EE). Thu lai bao nhieu lan cung the, va ban port
+  // chi `debug` nen caller ngoi cho toi VOICE_CONNECTION_TIMEOUT.
+  socket.onClose({ code: 4017, reason: 'E2EE/DAVE protocol required' });
+  assert.strictEqual(reconnects, 0);
+  assert.strictEqual(errors.length, 1);
+  assert.match(errors[0].message, /4017/);
+
+  // 4014 la bi ngat khoi kenh — binh thuong, dung thu lai nhung dung nem loi.
+  socket.onClose({ code: 4014, reason: 'Disconnected' });
+  assert.strictEqual(reconnects, 0);
+  assert.strictEqual(errors.length, 1);
+
+  // Ma la nhat thoi thi van thu lai. Lich reconnect chay qua setTimeout nen phai
+  // nhuong mot nhip; de attempts = 0 cho do treu hen gio.
+  socket.attempts = 0;
+  socket.onClose({ code: 1006, reason: '' });
+  await sleep(20);
+  assert.strictEqual(reconnects, 1);
 });

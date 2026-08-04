@@ -737,6 +737,20 @@ Ví dụ: [`examples/SlashCommand.js`](../examples/SlashCommand.js)
 
 Nguồn: [`src/client/voice/`](../src/client/voice) · Trạng thái: **ported**
 
+> **Voice không kết nối được, chấm hết.** Voice gateway của Discord giờ trả lời
+> IDENTIFY bằng close code `4017 E2EE/DAVE protocol required` — thử cả version 8,
+> 7, 6, 5, 4, mỗi lần một session mới tinh, đều như nhau. Mọi bước trước đó đều
+> chạy đúng: voice state update, session id, voice server update, resolve
+> endpoint, mở websocket, nhận HELLO — rồi Discord đòi giao thức mã hoá đầu-cuối
+> DAVE, thứ mà stack này ra đời trước và không biết nói. Muốn hỗ trợ thì phải cài
+> đặt trao đổi khoá MLS của DAVE, như `@discordjs/voice` làm qua `@snazzah/davey`.
+> Chừng nào chưa có, không một thứ nào bên dưới chạy được, và chưa từng có gói
+> audio nào đi qua.
+>
+> Voice còn cần hai thứ mà lib **cố tình không** bundle, vì đó là lựa chọn của
+> người dùng: `ffmpeg` trong `PATH`, và một binding Opus (`@discordjs/opus`, hoặc
+> `opusscript` nếu không build được native). `prism-media` tự tìm cái nào có.
+
 > Toàn bộ phần này chép nguyên từ bản v13 và **chưa bao giờ chạy với voice
 > channel thật**. Mọi file load được, phần thuần tuý có test — bảng codec, dựng
 > SDP, bitfield, những chỗ v13 dùng enum chuỗi còn v14 dùng số — nhưng UDP, đóng

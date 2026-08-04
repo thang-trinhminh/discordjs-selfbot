@@ -6,6 +6,25 @@ const { Opcodes, VoiceOpcodes } = require('../util/VoiceConstants');
 const WebSocket = require('../util/VoiceWebSocketShim');
 
 /**
+ * Mã đóng mà thử lại bao nhiêu lần cũng vậy. Bản port cứ thấy đóng là reconnect,
+ * nên một lỗi vĩnh viễn biến thành năm vòng gõ cửa vô ích rồi caller ngồi chờ
+ * tới `VOICE_CONNECTION_TIMEOUT` mà không biết lý do thật.
+ * @type {Map<number, string>}
+ */
+const FATAL_CLOSE_CODES = new Map([
+  [4004, 'Authentication failed'],
+  [4006, 'Session is no longer valid'],
+  [4017, 'E2EE/DAVE protocol required'],
+]);
+
+/**
+ * Bị ngắt khỏi kênh — chuyện bình thường (bị kick, kênh bị xoá). Ngừng thử lại,
+ * nhưng không nâng thành `error`: nhiều app không lắng nghe và sẽ chết theo.
+ * @type {number}
+ */
+const DISCONNECTED_CLOSE_CODE = 4014;
+
+/**
  * Represents a Voice Connection's WebSocket.
  * @extends {EventEmitter}
  * @private
@@ -66,7 +85,8 @@ class VoiceWebSocket extends EventEmitter {
     if (this.dead) return;
     if (this.ws) this.reset();
     if (this.attempts >= 5) {
-      this.emit('debug', new Error('VOICE_CONNECTION_ATTEMPTS_EXCEEDED', this.attempts));
+      // Bản port chỉ `debug` ở đây, nên promise của caller không bao giờ settle.
+      this.emit('error', new Error(`VOICE_CONNECTION_ATTEMPTS_EXCEEDED after ${this.attempts} attempts`));
       return;
     }
 
@@ -149,7 +169,17 @@ class VoiceWebSocket extends EventEmitter {
    */
   onClose(event) {
     this.emit('debug', `[WS] closed with code ${event.code} and reason: ${event.reason}`);
-    if (!this.dead) setTimeout(this.connect.bind(this), this.attempts * 1000).unref();
+    if (this.dead) return;
+
+    const fatal = FATAL_CLOSE_CODES.get(event.code);
+    if (fatal) {
+      this.emit('error', new Error(`Voice websocket closed with ${event.code}: ${event.reason || fatal}`));
+      return;
+    }
+
+    if (event.code === DISCONNECTED_CLOSE_CODE) return;
+
+    setTimeout(this.connect.bind(this), this.attempts * 1000).unref();
   }
 
   /**

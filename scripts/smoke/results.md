@@ -85,6 +85,31 @@ another user, and asserting that gateway packets really arrive. Two more finding
   only ways to refresh it. Decoding protobuf is out of scope, so this is recorded
   rather than fixed.
 
+Tier 3 reached voice, the one area copied wholesale from v13 and never run. It
+does not work, and two of the three reasons were in the fork:
+
+- **A user account could never join a guild voice channel.** `joinChannel` gates on
+  `channel.joinable`, which asks `guild.members.me` for permissions — and a user
+  token's `READY` never seeds the client's own member, so the member cache is empty,
+  `members.me` is `null`, and `joinable` is `false` for every channel. Measured on a
+  real guild: `joinable false`, `viewable false`, `permissionsFor(user) null`, and
+  after one `guild.members.fetch(self)` the same channel reports `joinable true`.
+  `joinChannel` now loads that member first.
+- **The voice websocket retried failures that can never succeed.** `onClose`
+  reconnected on any close code, five times, then emitted the give-up as `debug` —
+  which no one listens to — so the caller sat until a 15s `VOICE_CONNECTION_TIMEOUT`
+  and learned nothing about the cause. Fatal codes (4004, 4006, 4017) now raise the
+  real reason immediately; 4014, being a normal "you were disconnected", just stops
+  the retries without throwing at applications that never registered an error
+  handler.
+- **The wall itself is Discord's, and there is no way around it.**
+  `4017 E2EE/DAVE protocol required`, on gateway versions 8, 7, 6, 5 and 4, each
+  probed with a freshly minted session. Everything up to IDENTIFY works. Voice needs
+  the DAVE end-to-end encryption protocol, which this stack predates; supporting it
+  means MLS key exchange, the way `@discordjs/voice` does through `@snazzah/davey`.
+  The suite is kept because it now names the reason in one line, and it will pass
+  the day DAVE is implemented.
+
 `SKIP` in the table below means the check could not run, not that it passed. The
 four profile writes are blocked by hCaptcha on `PATCH /users/@me`: the library
 behaves correctly by surfacing the `400`, and testing them needs a `captchaSolver`
@@ -95,17 +120,17 @@ configured on the client.
 Nothing below has ever run against Discord. The table further down does not
 mention them at all — absence there means untested, not passing.
 
-| Area                                                                                                                                                                  | Why it is not in a suite                                                                                                                                                          | What it would take                                                                                                         |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **Voice, video, Go Live** — `joinChannel`, `playAudio`, `playVideo`, `createStreamConnection`, `joinStreamConnection`, `receiver.createStream`, `guildMemberSpeaking` | The whole stack is `ported` from the v13 fork and has never opened a socket. UDP, RTP packetisation, the voice handshake and encryption can only be proven live                   | A guild with a voice channel, and a second listener to confirm anything is actually audible. Highest risk area in the fork |
-| **Group DM with other people** — `addUser`, `removeUser`, `ring`, `setOwner`, `stopRinging`, `callCreate`/`callUpdate`/`callDelete`, `CallState.setRTCRegion`         | Every one needs somebody else in the channel. Creating, renaming, re-iconing, inviting into and deleting the sandbox group DM are covered; nothing social is                      | A second account that accepts being added to a group DM                                                                    |
-| **Sending interactions** — `sendSlash`, `clickButton`, `selectMenu`, modal submit, attachment options                                                                 | Needs another bot's commands to be usable in a channel the account can post in. `searchApplicationCommands` is tested, so the discovery route works; actually invoking one is not | A guild with a bot whose slash commands the account may run                                                                |
-| **`acceptInvite`**                                                                                                                                                    | Joining a guild is not undoable in the way the write suite requires, and leaving again is a separate visible action                                                               | A throwaway guild to join and leave                                                                                        |
-| **Profile writes** — `setAboutMe`, `setPronouns`, `setGlobalName`, `setAccentColor`                                                                                   | `PATCH /users/@me` answers with an hCaptcha challenge. They appear as `SKIP` in the table below                                                                                   | A `captchaSolver` configured on the client                                                                                 |
-| **`logout`, `Session#logout`, `logoutAllDevices`**                                                                                                                    | They invalidate the token or kill sessions, including the one running the test                                                                                                    | A throwaway account                                                                                                        |
-| **`QRLogin`, `passLogin`**                                                                                                                                            | `QRLogin` needs a human to scan with a phone; `passLogin` needs the account password and reliably draws a captcha                                                                 | Manual runs, and a solver for the password path                                                                            |
-| **`redeemNitro`, `installUserApps`, `deauthorize`, `authorizeURL`, `setHypeSquad`, `setUsername`**                                                                    | Cost money, change public state, or cannot be undone                                                                                                                              | Deliberately left out; not planned                                                                                         |
-| **Account settings arriving over the gateway**                                                                                                                        | Discord sends `USER_SETTINGS_PROTO_UPDATE`, a protobuf payload the fork does not decode. Its JSON `USER_SETTINGS_UPDATE` handler never fires, so there is nothing to exercise     | A protobuf decoder for `PreloadedUserSettings`; out of scope for now                                                       |
+| Area                                                                                                                                                          | Why it is not in a suite                                                                                                                                                                          | What it would take                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **Voice, video, Go Live** — `playAudio`, `playVideo`, `createStreamConnection`, `joinStreamConnection`, `receiver.createStream`, `guildMemberSpeaking`        | Blocked, not merely untried: Discord closes the voice websocket with `4017 E2EE/DAVE protocol required` on every gateway version. `joinChannel` itself is now exercised and fails there by design | Implementing the DAVE protocol (MLS key exchange). Also needs `ffmpeg` and an Opus binding, neither bundled |
+| **Group DM with other people** — `addUser`, `removeUser`, `ring`, `setOwner`, `stopRinging`, `callCreate`/`callUpdate`/`callDelete`, `CallState.setRTCRegion` | Every one needs somebody else in the channel. Creating, renaming, re-iconing, inviting into and deleting the sandbox group DM are covered; nothing social is                                      | A second account that accepts being added to a group DM                                                     |
+| **Sending interactions** — `sendSlash`, `clickButton`, `selectMenu`, modal submit, attachment options                                                         | Needs another bot's commands to be usable in a channel the account can post in. `searchApplicationCommands` is tested, so the discovery route works; actually invoking one is not                 | A guild with a bot whose slash commands the account may run                                                 |
+| **`acceptInvite`**                                                                                                                                            | Joining a guild is not undoable in the way the write suite requires, and leaving again is a separate visible action                                                                               | A throwaway guild to join and leave                                                                         |
+| **Profile writes** — `setAboutMe`, `setPronouns`, `setGlobalName`, `setAccentColor`                                                                           | `PATCH /users/@me` answers with an hCaptcha challenge. They appear as `SKIP` in the table below                                                                                                   | A `captchaSolver` configured on the client                                                                  |
+| **`logout`, `Session#logout`, `logoutAllDevices`**                                                                                                            | They invalidate the token or kill sessions, including the one running the test                                                                                                                    | A throwaway account                                                                                         |
+| **`QRLogin`, `passLogin`**                                                                                                                                    | `QRLogin` needs a human to scan with a phone; `passLogin` needs the account password and reliably draws a captcha                                                                                 | Manual runs, and a solver for the password path                                                             |
+| **`redeemNitro`, `installUserApps`, `deauthorize`, `authorizeURL`, `setHypeSquad`, `setUsername`**                                                            | Cost money, change public state, or cannot be undone                                                                                                                                              | Deliberately left out; not planned                                                                          |
+| **Account settings arriving over the gateway**                                                                                                                | Discord sends `USER_SETTINGS_PROTO_UPDATE`, a protobuf payload the fork does not decode. Its JSON `USER_SETTINGS_UPDATE` handler never fires, so there is nothing to exercise                     | A protobuf decoder for `PreloadedUserSettings`; out of scope for now                                        |
 
 ## Results
 
@@ -163,3 +188,8 @@ mention them at all — absence there means untested, not passing.
 | 2026-08-04 04:56 | message  | channel.delete()                                        | PASS   |
 | 2026-08-04 04:56 | readonly | users.fetch(friend, force)                              | PASS   |
 | 2026-08-04 04:56 | readonly | relationships.fetch(user)                               | PASS   |
+| 2026-08-04 07:01 | voice    | voice.joinChannel()                                     | FAIL   |
+| 2026-08-04 07:01 | voice    | connection.playAudio()                                  | SKIP   |
+| 2026-08-04 07:01 | voice    | connection.createStreamConnection()                     | SKIP   |
+| 2026-08-04 07:01 | voice    | receiver.createStream()                                 | SKIP   |
+| 2026-08-04 07:01 | voice    | connection.disconnect()                                 | SKIP   |

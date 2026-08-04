@@ -9,12 +9,14 @@ history.
     node --env-file=.env scripts/smoke/readonly.mjs
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/write.mjs
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/message.mjs
+    SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/voice.mjs
 
 | Script         | Proves                                                                                                                                                                                                               |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `login.mjs`    | P0-P2: REST shim + user account identify + gateway connect, `ready` fires, `client.user` is correct                                                                                                                  |
 | `write.mjs`    | Twenty write checks in **one** login. Every one snapshots the current value, writes, reads back, restores and reads back again. A failed restore stops the whole script and prints the original value                |
 | `message.mjs`  | Sixteen checks in a throwaway group DM: send, fetch, edit, reply, react, typing, pin, file upload, attachment refresh, collector, WebEmbed unfurl, delete, and the channel management the sandbox owner can do alone |
+| `voice.mjs`    | Joining a voice channel, playing audio, Go Live, receiving, leaving. Currently all it can prove is where Discord stops the fork — see the note below                                                                 |
 | `readonly.mjs` | Sixteen read-only checks in **one** login: relationships, guild settings, settings, sessions, notes, profile, billing, friend invites, authorized apps, attachment refresh, application-command search               |
 
 Results live in [`results.md`](./results.md) — one table, one row per check, with
@@ -34,6 +36,13 @@ everything there and deletes the channel afterwards — including if a check thr
 half way. A DM with yourself is not an option; Discord answers `400`. Its WebEmbed
 check pushes the marker string through the third-party render service named in
 `WebEmbed.DEFAULT_BASE_URL`; set `SMOKE_SKIP_WEBEMBED=1` to leave that one out.
+
+`voice.mjs` needs `SMOKE_VOICE_CHANNEL_ID`, `ffmpeg` on `PATH`, and an Opus binding
+(`opusscript` is a devDependency here; the library itself bundles neither, since
+both are the consumer's choice). Joining a voice channel is **visible to the whole
+server**, unlike every other suite — pick a quiet channel. It fails at the first
+check today: Discord answers the voice IDENTIFY with `4017 E2EE/DAVE protocol
+required` on every gateway version, and the fork does not speak DAVE.
 
 `SKIP` means the check could not run, not that it passed. Besides the friend-invite
 guard, `refreshAttachmentURL()` needs `SMOKE_ATTACHMENT_URL` (an expired

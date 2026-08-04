@@ -743,6 +743,21 @@ Example: [`examples/SlashCommand.js`](../examples/SlashCommand.js)
 
 Source: [`src/client/voice/`](../src/client/voice) · Status: **ported**
 
+> **Voice does not connect at all.** Discord's voice gateway now answers the
+> IDENTIFY with close code `4017 E2EE/DAVE protocol required`, on gateway versions
+> 8, 7, 6, 5 and 4 alike, each tried with a fresh session. Everything up to that
+> point works — voice state update, session id, voice server update, endpoint
+> resolution, websocket connect, HELLO — and then Discord demands the DAVE
+> end-to-end encryption protocol, which this stack predates and does not speak.
+> Supporting it means implementing DAVE's MLS key exchange, the way
+> `@discordjs/voice` does through `@snazzah/davey`. Until then nothing below can
+> work, and none of it has ever moved a packet of audio.
+>
+> Voice also needs two things the library deliberately does **not** bundle, because
+> they are the consumer's choice: `ffmpeg` on `PATH`, and an Opus binding
+> (`@discordjs/opus`, or `opusscript` if you cannot build native modules).
+> `prism-media` picks whichever it finds.
+
 > This whole area was copied wholesale from the v13 fork and has **never been run
 > against a real voice channel**. Every file loads and the pure parts are tested
 > — the codec table, SDP construction, the bitfields, the spots where v13 used

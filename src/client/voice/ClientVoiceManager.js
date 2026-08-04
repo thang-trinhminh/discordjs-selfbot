@@ -100,13 +100,22 @@ class ClientVoiceManager {
    * @param {JoinChannelConfig} config Config to join voice channel
    * @returns {Promise<VoiceConnection>}
    */
-  joinChannel(channel, config = {}) {
-    return new Promise((resolve, reject) => {
-      channel = this.client.channels.resolve(channel);
-      if (!isDMBasedChannel(channel) && !channel.joinable) {
-        throw new Error('VOICE_JOIN_CHANNEL', channel.full);
-      }
+  async joinChannel(channel, config = {}) {
+    channel = this.client.channels.resolve(channel);
 
+    // `channel.joinable` hỏi quyền qua `guild.members.me`. Với tài khoản người
+    // dùng, `READY` không seed member của chính mình — cache member rỗng, nên
+    // `members.me` là `null`, `joinable` luôn `false` và mọi lần vào voice channel
+    // trong guild đều bị chặn ngay tại đây. Nạp member trước rồi mới hỏi quyền.
+    if (channel?.guild && !channel.guild.members.me) {
+      await channel.guild.members.fetch(this.client.user.id).catch(() => null);
+    }
+
+    if (!isDMBasedChannel(channel) && !channel.joinable) {
+      throw new Error('VOICE_JOIN_CHANNEL', channel.full);
+    }
+
+    return new Promise((resolve, reject) => {
       let connection = this.connection;
 
       if (connection) {
