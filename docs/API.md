@@ -459,6 +459,11 @@ const [{ refreshed }] = await client.refreshAttachmentURL(oldUrl);
 Source: [`src/structures/GroupDMChannel.js`](../src/structures/GroupDMChannel.js),
 [`src/structures/CallState.js`](../src/structures/CallState.js) · Status: **unit**
 
+> Creating and deleting a group DM is exercised by the message smoke suite, which
+> builds one as its sandbox. Everything that involves another person — `addUser`,
+> `removeUser`, `ring`, `setOwner`, `stopRinging` and the `call*` events — is
+> **untested**; it needs a second account.
+
 ```ts
 class GroupDMChannel extends BaseChannel {
   type: ChannelType.GroupDM;
@@ -664,7 +669,10 @@ Source: [`src/util/InteractionSender.js`](../src/util/InteractionSender.js),
 [`src/structures/ChannelInteractionActions.js`](../src/structures/ChannelInteractionActions.js),
 [`src/structures/MessageInteractionActions.js`](../src/structures/MessageInteractionActions.js)
 · Status: **unit**, except `searchApplicationCommands()` which is **tested**
-(the route answers; sending a command still is not)
+
+> The discovery route answers on a real account. Actually invoking a command —
+> `sendSlash`, `clickButton`, `selectMenu`, modal submit, attachment options — is
+> **untested**: it needs a guild with a bot whose commands the account may run.
 
 A user account cannot _receive_ interactions, but it can _send_ them: run
 another bot's slash command, click its buttons, pick from its select menus.

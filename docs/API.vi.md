@@ -453,6 +453,11 @@ Nguồn: [`src/structures/GroupDMChannel.js`](../src/structures/GroupDMChannel.j
 [`src/structures/CallState.js`](../src/structures/CallState.js) · Trạng thái:
 **unit**
 
+> Tạo và xoá group DM thì bộ smoke tin nhắn có chạy, vì nó dựng một group DM làm
+> sandbox. Mọi thứ dính tới người khác — `addUser`, `removeUser`, `ring`,
+> `setOwner`, `stopRinging` và các event `call*` — đều **chưa test**; cần một tài
+> khoản thứ hai.
+
 ```ts
 class GroupDMChannel extends BaseChannel {
   type: ChannelType.GroupDM;
@@ -657,8 +662,11 @@ Ví dụ: [`examples/WebEmbed.js`](../examples/WebEmbed.js)
 Nguồn: [`src/util/InteractionSender.js`](../src/util/InteractionSender.js),
 [`src/structures/ChannelInteractionActions.js`](../src/structures/ChannelInteractionActions.js),
 [`src/structures/MessageInteractionActions.js`](../src/structures/MessageInteractionActions.js)
-· Trạng thái: **unit**, trừ `searchApplicationCommands()` là **tested** (route trả
-lời được; gửi lệnh thì vẫn chưa)
+· Trạng thái: **unit**, trừ `searchApplicationCommands()` là **tested**
+
+> Route tìm lệnh thì trả lời được trên tài khoản thật. Còn gọi lệnh thật —
+> `sendSlash`, `clickButton`, `selectMenu`, modal submit, option kiểu attachment —
+> vẫn **chưa test**: cần một guild có bot mà tài khoản được phép chạy lệnh.
 
 User account không _nhận_ được interaction, nhưng _gửi_ được: chạy slash command
 của bot khác, bấm nút, chọn select menu của nó.
