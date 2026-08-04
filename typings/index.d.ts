@@ -8586,7 +8586,6 @@ export interface ClientUser {
   revokeAllFriendInvites(): Promise<void>;
   setSamsungActivity(packageName: string, action?: 'START' | 'UPDATE' | 'STOP'): Promise<this>;
   stopRinging(channel: ChannelResolvable): Promise<void>;
-  fetchBurstCredit(): Promise<number>;
 }
 
 export interface Guild {

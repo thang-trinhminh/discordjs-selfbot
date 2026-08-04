@@ -19,9 +19,11 @@ files they live in are the ones listed in the divergence table of
 | unit   | Covered by offline tests in [`test/`](../test); never run against Discord                             |
 | ported | Copied from `discord.js-selfbot-v13` and never run at all. Routes and constants may be stale          |
 
-Only login and the read side of relationships, settings, sessions, notes and
-profile fetching are `tested`. Assume everything else can fail against today's
-Discord.
+Only login and the **read** side is `tested`: relationships, settings, sessions,
+notes, profile fetching, billing, friend invites, authorized applications and the
+application-command search route. Every **write** — anything that changes the
+account, joins a guild, sends an interaction, or opens a voice connection — is
+`unit` or `ported`. Assume it can fail against today's Discord.
 
 ## Contents
 
@@ -324,7 +326,7 @@ await g.settings.edit({ muted: true });
 
 Source: [`src/managers/BillingManager.js`](../src/managers/BillingManager.js),
 [`src/structures/GuildBoost.js`](../src/structures/GuildBoost.js) · Status:
-**unit**
+**tested** (all three fetches), **unit** (`subscribe`/`unsubscribe`)
 
 ```ts
 client.billing: BillingManager;
@@ -369,7 +371,14 @@ Nitro codes are redeemed through `client.redeemNitro()` — see
 ## 8. Account and profile
 
 Source: [`src/structures/ClientUserActions.js`](../src/structures/ClientUserActions.js),
-[`src/client/ClientActions.js`](../src/client/ClientActions.js) · Status: **unit**
+[`src/client/ClientActions.js`](../src/client/ClientActions.js) · Status: **unit**,
+except `fetchFriendInvites()` and `authorizedApplications()` which are **tested**
+
+> `fetchBurstCredit()` was **removed**. `GET /users/@me/burst-credits` answers a
+> bare `404 code 0` on both API v9 and v10 — route gone, not a permission or Nitro
+> problem (`/users/@me/premium-usage` on the same account answers a typed `10084`
+> instead). No replacement route is known, so the method was deleted rather than
+> left to always throw.
 
 ### Profile
 
@@ -379,7 +388,6 @@ client.user.setPronouns(pronouns?: string | null): Promise<this>;
 client.user.setAboutMe(bio?: string | null): Promise<this>;
 client.user.setAccentColor(color?: ColorResolvable | null): Promise<this>;
 client.user.setHypeSquad(house: number | 'Leave' | 'Bravery' | 'Brilliance' | 'Balance'): Promise<void>;
-client.user.fetchBurstCredit(): Promise<number>;
 client.user.setSamsungActivity(packageName: string, action?: 'START' | 'UPDATE' | 'STOP'): Promise<this>;
 client.user.stopRinging(channel: ChannelResolvable): Promise<void>;
 ```
@@ -637,7 +645,8 @@ Example: [`examples/WebEmbed.js`](../examples/WebEmbed.js)
 Source: [`src/util/InteractionSender.js`](../src/util/InteractionSender.js),
 [`src/structures/ChannelInteractionActions.js`](../src/structures/ChannelInteractionActions.js),
 [`src/structures/MessageInteractionActions.js`](../src/structures/MessageInteractionActions.js)
-· Status: **unit**
+· Status: **unit**, except `searchApplicationCommands()` which is **tested**
+(the route answers; sending a command still is not)
 
 A user account cannot _receive_ interactions, but it can _send_ them: run
 another bot's slash command, click its buttons, pick from its select menus.

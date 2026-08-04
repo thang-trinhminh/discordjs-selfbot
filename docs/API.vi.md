@@ -18,9 +18,11 @@ sự thật. Các file chứa chúng nằm trong bảng lệch của
 | unit       | Có test offline trong [`test/`](../test); chưa bao giờ chạy với Discord thật                      |
 | ported     | Chép từ `discord.js-selfbot-v13`, chưa chạy lần nào. Route và hằng số có thể đã cũ                |
 
-Chỉ phần đăng nhập và phía đọc của relationships, settings, sessions, notes và
-fetch profile là `tested`. Mọi thứ khác nên coi như có thể hỏng với Discord hiện
-tại.
+Chỉ phần đăng nhập và phía **đọc** là `tested`: relationships, settings,
+sessions, notes, fetch profile, thanh toán, lời mời kết bạn, application đã cấp
+quyền và route tìm application command. Mọi thao tác **ghi** — đổi tài khoản,
+vào guild, gửi interaction, mở kết nối voice — đều là `unit` hoặc `ported`, nên
+coi như có thể hỏng với Discord hiện tại.
 
 ## Mục lục
 
@@ -321,7 +323,7 @@ await g.settings.edit({ muted: true });
 
 Nguồn: [`src/managers/BillingManager.js`](../src/managers/BillingManager.js),
 [`src/structures/GuildBoost.js`](../src/structures/GuildBoost.js) · Trạng thái:
-**unit**
+**tested** (cả ba hàm fetch), **unit** (`subscribe`/`unsubscribe`)
 
 ```ts
 client.billing: BillingManager;
@@ -367,7 +369,12 @@ await free?.subscribe('123456789');
 
 Nguồn: [`src/structures/ClientUserActions.js`](../src/structures/ClientUserActions.js),
 [`src/client/ClientActions.js`](../src/client/ClientActions.js) · Trạng thái:
-**unit**
+**unit**, trừ `fetchFriendInvites()` và `authorizedApplications()` là **tested**
+
+> `fetchBurstCredit()` đã bị **xoá**. `GET /users/@me/burst-credits` trả `404 code 0`
+> trơn trên cả API v9 lẫn v10 — route không còn, không phải vấn đề quyền hay Nitro
+> (`/users/@me/premium-usage` trên cùng tài khoản trả lỗi có mã `10084`). Không biết
+> route thay thế, nên xoá hẳn thay vì để một hàm luôn ném lỗi.
 
 ### Hồ sơ
 
@@ -377,7 +384,6 @@ client.user.setPronouns(pronouns?: string | null): Promise<this>;
 client.user.setAboutMe(bio?: string | null): Promise<this>;
 client.user.setAccentColor(color?: ColorResolvable | null): Promise<this>;
 client.user.setHypeSquad(house: number | 'Leave' | 'Bravery' | 'Brilliance' | 'Balance'): Promise<void>;
-client.user.fetchBurstCredit(): Promise<number>;
 client.user.setSamsungActivity(packageName: string, action?: 'START' | 'UPDATE' | 'STOP'): Promise<this>;
 client.user.stopRinging(channel: ChannelResolvable): Promise<void>;
 ```
@@ -636,7 +642,8 @@ Ví dụ: [`examples/WebEmbed.js`](../examples/WebEmbed.js)
 Nguồn: [`src/util/InteractionSender.js`](../src/util/InteractionSender.js),
 [`src/structures/ChannelInteractionActions.js`](../src/structures/ChannelInteractionActions.js),
 [`src/structures/MessageInteractionActions.js`](../src/structures/MessageInteractionActions.js)
-· Trạng thái: **unit**
+· Trạng thái: **unit**, trừ `searchApplicationCommands()` là **tested** (route trả
+lời được; gửi lệnh thì vẫn chưa)
 
 User account không _nhận_ được interaction, nhưng _gửi_ được: chạy slash command
 của bot khác, bấm nút, chọn select menu của nó.

@@ -98,6 +98,57 @@ client.once('ready', async () => {
     return `id khop=${user.id === client.user.id} bot=${user.bot}`;
   });
 
+  await check('billing.fetchPaymentSources()', async () => {
+    const sources = await client.billing.fetchPaymentSources();
+    return `nguon=${sources.size}`;
+  });
+
+  await check('billing.fetchGuildBoosts()', async () => {
+    const boosts = await client.billing.fetchGuildBoosts();
+    return `slot=${boosts.size} da dung=${boosts.filter(boost => boost.used).size}`;
+  });
+
+  await check('billing.fetchCurrentSubscription()', async () => {
+    const subscriptions = await client.billing.fetchCurrentSubscription();
+    return `goi=${subscriptions.size}`;
+  });
+
+  await check('user.fetchFriendInvites()', async () => {
+    const invites = await client.user.fetchFriendInvites();
+    return `loi moi=${invites.size}`;
+  });
+
+  await check('authorizedApplications()', async () => {
+    const apps = await client.authorizedApplications();
+    const shaped = apps.every(entry => entry.application && Array.isArray(entry.scopes));
+    return `app=${apps.size} dung dang=${shaped}`;
+  });
+
+  await check('refreshAttachmentURL()', async () => {
+    // Can mot link CDN that trong SMOKE_ATTACHMENT_URL. Khong co thi bo qua.
+    const url = process.env.SMOKE_ATTACHMENT_URL;
+    if (!url) return 'skipped: thieu SMOKE_ATTACHMENT_URL';
+    const [entry] = await client.refreshAttachmentURL(url);
+    return `co chu ky moi=${Boolean(entry?.refreshed)}`;
+  });
+
+  await check('channel.searchApplicationCommands()', async () => {
+    // Uu tien DM: khong co permission overwrite nen khong bao gio tra 50013.
+    const searchable = item => typeof item.searchApplicationCommands === 'function';
+    const channel =
+      client.channels.cache.find(item => searchable(item) && !item.guild) ??
+      client.channels.cache.find(item => searchable(item));
+    if (!channel) return 'skipped: khong co kenh text trong cache';
+    try {
+      const data = await channel.searchApplicationCommands({ limit: 1 });
+      return `lenh=${data.application_commands?.length ?? 0}`;
+    } catch (error) {
+      // 50013 nghia la route dung va token duoc chap nhan, chi kenh nay chan quyen.
+      if (error.code === 50013) return 'route ok, kenh chan UseApplicationCommands';
+      throw error;
+    }
+  });
+
   const failed = results.filter(result => result.status === 'FAIL');
   const passed = results.length - failed.length;
 
@@ -107,12 +158,17 @@ client.once('ready', async () => {
   );
   console.log(`tong: ${passed}/${results.length} pass`);
 
-  // File: chi ngay va pass/fail.
-  const row = [
-    `| ${new Date().toISOString().replace('T', ' ').slice(0, 16)} | readonly | ${passed}/${results.length} |`,
-    failed.length ? ` ${failed.map(result => result.name).join(', ')} |` : ' — |',
-  ].join('');
-  appendFileSync(LOG_FILE, `${row}\n`);
+  // File: mot dong moi check, chi ngay va pass/fail. Khong ghi gia tri tra ve.
+  const stamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
+  const block = [
+    '',
+    `### ${stamp} UTC — readonly ${passed}/${results.length}`,
+    '',
+    '| Check | Result |',
+    '| ----- | ------ |',
+    ...results.map(result => `| ${result.name} | ${result.status} |`),
+  ].join('\n');
+  appendFileSync(LOG_FILE, `${block}\n`);
   console.log(`Da ghi ket qua vao ${LOG_FILE.pathname}`);
 
   client.destroy();

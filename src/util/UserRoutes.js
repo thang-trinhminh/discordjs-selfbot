@@ -103,14 +103,6 @@ const UserRoutes = {
   },
 
   /**
-   * Route số burst reaction credit còn lại.
-   * @returns {string}
-   */
-  burstCredits() {
-    return '/users/@me/burst-credits';
-  },
-
-  /**
    * Route chấp nhận Điều khoản dịch vụ và Chính sách quyền riêng tư.
    * @returns {string}
    */

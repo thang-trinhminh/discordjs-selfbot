@@ -199,12 +199,3 @@ test('stopRinging resolve kenh thanh id', async () => {
 
   client.destroy();
 });
-
-test('fetchBurstCredit tra ve so amount', async () => {
-  const client = makeClient();
-  client.rest.get = async () => ({ amount: 7 });
-
-  assert.strictEqual(await client.user.fetchBurstCredit(), 7);
-
-  client.destroy();
-});

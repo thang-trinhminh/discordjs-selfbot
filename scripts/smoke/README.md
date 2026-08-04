@@ -8,18 +8,22 @@ history.
 
     node --env-file=.env scripts/smoke/readonly.mjs
 
-| Script         | Proves                                                                                                     |
-| -------------- | ---------------------------------------------------------------------------------------------------------- |
-| `login.mjs`    | P0-P2: REST shim + user account identify + gateway connect, `ready` fires, `client.user` is correct        |
-| `readonly.mjs` | Eight read-only checks in **one** login: relationships, guild settings, settings, sessions, notes, profile |
+| Script         | Proves                                                                                                                                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `login.mjs`    | P0-P2: REST shim + user account identify + gateway connect, `ready` fires, `client.user` is correct                                                                                                    |
+| `readonly.mjs` | Fifteen read-only checks in **one** login: relationships, guild settings, settings, sessions, notes, profile, billing, friend invites, authorized apps, attachment refresh, application-command search |
 
-Per-run results live in [`results.md`](./results.md) — dates and pass/fail only, no
-account data.
+Per-run results live in [`results.md`](./results.md) — one block per run, one row
+per check, dates and pass/fail only, no account data.
+
+Two checks skip themselves when their input is missing rather than failing:
+`refreshAttachmentURL()` needs `SMOKE_ATTACHMENT_URL` (an expired
+`cdn.discordapp.com` link), and `notes.fetch()` needs a friend in the cache.
 
 Every run costs one identify. Discord flags accounts that reconnect in bursts, so
-`readonly.mjs` gathers all eight checks into a single session and pauses
-`SMOKE_CALL_DELAY_MS` (2s by default) between requests. Leave at least 30s between
-runs.
+`readonly.mjs` gathers all fifteen checks into a single session and pauses
+`SMOKE_CALL_DELAY_MS` (2s by default) between requests — about 35s per run. Leave
+at least 30s between runs.
 
 ## Reading the close code on failure
 

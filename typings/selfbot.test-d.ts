@@ -72,7 +72,6 @@ expectType<string>(new WebEmbed({ baseURL: 'https://embed.kalix.vn' }).setTitle(
 declare const clientUser: ClientUser;
 expectType<Promise<ClientUser>>(clientUser.edit({ username: 'a', password: 'b', bio: 'c', pronouns: 'd' }));
 expectType<Promise<ClientUser>>(clientUser.setGlobalName('Ten'));
-expectType<Promise<number>>(clientUser.fetchBurstCredit());
 
 // Boost.
 declare const boost: GuildBoost;
