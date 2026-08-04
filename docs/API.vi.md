@@ -776,8 +776,11 @@ Nguồn: [`src/client/voice/`](../src/client/voice) · Trạng thái: **ported**
 > `user_id`, `token` lấy từ `VOICE_SERVER_UPDATE` của chính lần chạy đó, và
 > `session_id` khớp từng ký tự với `sessionInfo.sessionId` của shard. Cùng một mã
 > 4006 không có trong tài liệu này cũng được báo ở nơi khác với tài khoản người
-> dùng, và bám theo voice region chứ không theo code client. Chừng nào Discord còn
-> trả về nó, không gói audio nào đi qua được.
+> dùng. Ép `rtcRegion` sang Singapore, Nhật, us-east, Rotterdam đều không cứu được:
+> 4006 bám theo từng máy chủ voice chứ không theo region. Đúng một máy chủ trong
+> hơn chục lần thử đã nhận IDENTIFY và chạy được bắt tay MLS — nhờ đó mới biết stack
+> thật sự chạy. Trúng máy chủ nào là hên xui, nên phần lớn lần vào kênh vẫn không có
+> gói audio nào đi qua.
 >
 > **`@snazzah/davey` là `optionalDependency` và thiếu nó thì voice không chạy.**
 > `npm i @snazzah/davey`. Thiếu, `joinChannel` ném ra một câu nói rõ tên gói chứ

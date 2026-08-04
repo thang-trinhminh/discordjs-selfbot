@@ -783,9 +783,12 @@ Source: [`src/client/voice/`](../src/client/voice) · Status: **ported**
 > Every IDENTIFY field was verified against a live gateway: `server_id`,
 > `channel_id`, `user_id`, a `token` from the same run's `VOICE_SERVER_UPDATE`, and a
 > `session_id` matching the shard's own `sessionInfo.sessionId` byte for byte. The
-> same undocumented 4006 is reported against user accounts elsewhere and tracks voice
-> region rather than client code. Until Discord stops sending it, nothing below moves
-> a packet of audio.
+> same undocumented 4006 is reported against user accounts elsewhere. Forcing
+> `rtcRegion` to Singapore, Japan, us-east and Rotterdam does not help: 4006 follows
+> the individual voice server, not the region. Exactly one server out of a dozen
+> tried accepted the IDENTIFY and ran the MLS handshake, which is how we know the
+> stack works at all. Which server you are handed is luck, so most joins still move
+> no audio.
 >
 > **`@snazzah/davey` is an `optionalDependency` and voice cannot work without it.**
 > `npm i @snazzah/davey`. Missing it, `joinChannel` throws a sentence naming the
