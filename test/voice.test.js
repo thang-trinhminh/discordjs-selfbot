@@ -481,3 +481,108 @@ test('decrypt thanh cong dat lai bo dem hong', () => {
 
   assert.strictEqual(session.decrypt(Buffer.from('opus'), '333').toString('utf8'), 'dec:opus');
 });
+
+// VoiceWebSocket đụng vào `connection`, `client` và một socket thật. Ở đây dựng bản
+// giả tối thiểu rồi gọi thẳng vào các hàm xử lý — không mở kết nối nào.
+function makeVoiceWebSocket({ identifyExtras } = {}) {
+  const VoiceWebSocket = require('../src/client/voice/networking/VoiceWebSocket.js');
+  const sent = [];
+
+  const connection = new EventEmitter();
+  connection.client = { user: { id: '111' } };
+  connection.serverId = null;
+  connection.channel = { id: '444', guild: { id: '555' } };
+  connection.authentication = { token: 'tok', sessionId: 'sess', endpoint: 'x.discord.gg' };
+  if (identifyExtras) connection.identifyExtras = identifyExtras;
+
+  const websocket = new VoiceWebSocket(connection);
+  websocket.send = data => {
+    sent.push(data);
+    return Promise.resolve(data);
+  };
+
+  return { websocket, sent };
+}
+
+test('IDENTIFY khai max_dave_protocol_version va dung opcode IDENTIFY', () => {
+  const { DAVE_PROTOCOL_VERSION } = require('../src/client/voice/networking/DAVESession.js');
+  const { websocket, sent } = makeVoiceWebSocket();
+
+  websocket.onOpen();
+
+  const packet = JSON.parse(sent[0]);
+  assert.strictEqual(packet.op, VoiceOpcodes.IDENTIFY);
+  assert.strictEqual(packet.d.max_dave_protocol_version, DAVE_PROTOCOL_VERSION);
+  assert.strictEqual(packet.d.server_id, '555');
+  assert.strictEqual(packet.d.session_id, 'sess');
+});
+
+test('IDENTIFY cua voice thuong khong mang payload Go Live', () => {
+  const { websocket, sent } = makeVoiceWebSocket();
+
+  websocket.onOpen();
+
+  const packet = JSON.parse(sent[0]);
+  assert.strictEqual('streams' in packet.d, false);
+  assert.strictEqual('video' in packet.d, false);
+});
+
+test('IDENTIFY mang lai payload Go Live khi connection khai identifyExtras', () => {
+  const extras = { streams: [{ type: 'screen', rid: '100', quality: 100 }], video: true };
+  const { websocket, sent } = makeVoiceWebSocket({ identifyExtras: extras });
+
+  websocket.onOpen();
+
+  const packet = JSON.parse(sent[0]);
+  assert.deepStrictEqual(packet.d.streams, extras.streams);
+  assert.strictEqual(packet.d.video, true);
+});
+
+test('connectedClients cong theo opcode 11 va tru theo opcode 13', () => {
+  const { websocket } = makeVoiceWebSocket();
+
+  websocket.onPacket({ op: VoiceOpcodes.CLIENTS_CONNECT, d: { user_ids: ['333', '444'] } });
+  assert.deepStrictEqual([...websocket.connectedClients].sort(), ['333', '444']);
+
+  websocket.onPacket({ op: VoiceOpcodes.CLIENT_DISCONNECT, d: { user_id: '333' } });
+  assert.deepStrictEqual([...websocket.connectedClients], ['444']);
+});
+
+test('opcode DAVE dang JSON di ra event daveMessage', () => {
+  const { websocket } = makeVoiceWebSocket();
+  const seen = [];
+  websocket.on('daveMessage', message => seen.push(message));
+
+  websocket.onPacket({ op: VoiceOpcodes.DAVE_PREPARE_TRANSITION, d: { transition_id: 3, protocol_version: 1 } });
+  websocket.onPacket({ op: VoiceOpcodes.DAVE_EXECUTE_TRANSITION, d: { transition_id: 3 } });
+  websocket.onPacket({ op: VoiceOpcodes.DAVE_PREPARE_EPOCH, d: { epoch: 1, protocol_version: 1 } });
+
+  assert.deepStrictEqual(
+    seen.map(message => message.op),
+    [VoiceOpcodes.DAVE_PREPARE_TRANSITION, VoiceOpcodes.DAVE_EXECUTE_TRANSITION, VoiceOpcodes.DAVE_PREPARE_EPOCH],
+  );
+  assert.deepStrictEqual(seen[0].d, { transition_id: 3, protocol_version: 1 });
+});
+
+test('frame nhi phan di ra event daveBinary va cap nhat seq', () => {
+  const { websocket } = makeVoiceWebSocket();
+  const seen = [];
+  websocket.on('daveBinary', message => seen.push(message));
+
+  const frame = Buffer.concat([Buffer.from([0x00, 0x11, VoiceOpcodes.DAVE_MLS_PROPOSALS]), Buffer.from('body')]);
+  websocket.onMessage({ data: frame });
+
+  assert.strictEqual(seen.length, 1);
+  assert.strictEqual(seen[0].op, VoiceOpcodes.DAVE_MLS_PROPOSALS);
+  assert.strictEqual(seen[0].payload.toString('utf8'), 'body');
+  assert.strictEqual(websocket._sequenceNumber, 17);
+});
+
+test('sendBinary gui opcode mot byte roi payload', async () => {
+  const { websocket, sent } = makeVoiceWebSocket();
+
+  await websocket.sendBinary(VoiceOpcodes.DAVE_MLS_KEY_PACKAGE, Buffer.from('kp'));
+
+  assert.strictEqual(sent[0].readUInt8(0), VoiceOpcodes.DAVE_MLS_KEY_PACKAGE);
+  assert.strictEqual(sent[0].subarray(1).toString('utf8'), 'kp');
+});
