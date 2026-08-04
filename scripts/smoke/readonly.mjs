@@ -98,6 +98,21 @@ client.once('ready', async () => {
     return `id khop=${user.id === client.user.id} bot=${user.bot}`;
   });
 
+  await check('users.fetch(friend, force)', async () => {
+    // Route /users/:id/profile voi mot nguoi khac, khong phai chinh minh.
+    const friendId = client.relationships.friendCache.firstKey();
+    if (!friendId) return 'skipped: no friend in cache';
+    const user = await client.users.fetch(friendId, { force: true });
+    return `id khop=${user.id === friendId} co username=${Boolean(user.username)}`;
+  });
+
+  await check('relationships.fetch(user)', async () => {
+    const friendId = client.relationships.friendCache.firstKey();
+    if (!friendId) return 'skipped: no friend in cache';
+    const type = await client.relationships.fetch(friendId);
+    return `kieu quan he=${type}`;
+  });
+
   await check('billing.fetchPaymentSources()', async () => {
     const sources = await client.billing.fetchPaymentSources();
     return `nguon=${sources.size}`;
@@ -122,14 +137,6 @@ client.once('ready', async () => {
     const apps = await client.authorizedApplications();
     const shaped = apps.every(entry => entry.application && Array.isArray(entry.scopes));
     return `app=${apps.size} dung dang=${shaped}`;
-  });
-
-  await check('refreshAttachmentURL()', async () => {
-    // Can mot link CDN that trong SMOKE_ATTACHMENT_URL. Khong co thi bo qua.
-    const url = process.env.SMOKE_ATTACHMENT_URL;
-    if (!url) return 'skipped: thieu SMOKE_ATTACHMENT_URL';
-    const [entry] = await client.refreshAttachmentURL(url);
-    return `co chu ky moi=${Boolean(entry?.refreshed)}`;
   });
 
   await check('channel.searchApplicationCommands()', async () => {

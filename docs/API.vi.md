@@ -262,8 +262,16 @@ await client.notes.updateNote('123456789', null); // xoá
 
 Nguồn: [`src/managers/ClientUserSettingManager.js`](../src/managers/ClientUserSettingManager.js),
 [`src/managers/GuildSettingManager.js`](../src/managers/GuildSettingManager.js)
-· Trạng thái: **tested** (phía đọc, thêm `setTheme`, `toggleCompactMode` và
-`setCustomStatus` đã ghi rồi trả lại trên tài khoản thật)
+· Trạng thái: **tested** (phía đọc, thêm `setTheme`, `toggleCompactMode`,
+`setCustomStatus`, `addRestrictedGuild`/`removeRestrictedGuild` và
+`Guild#settings.edit` đã ghi rồi trả lại trên tài khoản thật)
+
+> **`client.settings` không tự tươi lại.** Discord giờ đẩy setting tài khoản dưới
+> dạng `USER_SETTINGS_PROTO_UPDATE` (protobuf) mà fork không giải mã; handler
+> `USER_SETTINGS_UPDATE` dạng JSON đang có thì không bao giờ bắn. Đổi setting ở
+> thiết bị khác thì object này vẫn giữ giá trị cũ cho tới khi bạn gọi `fetch()`
+> hoặc `edit()`. Setting theo guild không bị ảnh hưởng —
+> `USER_GUILD_SETTINGS_UPDATE` vẫn về dạng JSON và vẫn được xử lý.
 
 ### Cài đặt tài khoản
 
@@ -453,9 +461,10 @@ Nguồn: [`src/structures/GroupDMChannel.js`](../src/structures/GroupDMChannel.j
 [`src/structures/CallState.js`](../src/structures/CallState.js) · Trạng thái:
 **unit**
 
-> Tạo và xoá group DM thì bộ smoke tin nhắn có chạy, vì nó dựng một group DM làm
-> sandbox. Mọi thứ dính tới người khác — `addUser`, `removeUser`, `ring`,
-> `setOwner`, `stopRinging` và các event `call*` — đều **chưa test**; cần một tài
+> Bộ smoke tin nhắn dựng một group DM làm sandbox, nên `create`, `setName`,
+> `setIcon`, `createInvite`, `fetchInvites`, `deleteInvite` và `delete` đều
+> **tested**. Mọi thứ dính tới người khác — `addUser`, `removeUser`, `ring`,
+> `setOwner`, `stopRinging` và các event `call*` — vẫn **chưa test**; cần một tài
 > khoản thứ hai.
 
 ```ts

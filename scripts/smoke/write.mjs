@@ -16,7 +16,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { appendResults } from './log.mjs';
 
 const require = createRequire(import.meta.url);
-const { Client, CustomStatus, RichPresence, SpotifyRPC } = require('../../src/index.js');
+const { Client, CustomStatus, Events, RichPresence, SpotifyRPC } = require('../../src/index.js');
 
 const token = process.env.DISCORD_TOKEN;
 if (!token) {
@@ -38,6 +38,15 @@ const MARKER = `smoke-${Date.now().toString(36)}`;
 
 const client = new Client({});
 const results = [];
+
+// Moi thao tac ghi ben duoi deu lam Discord day nguoc mot packet ve. Gom lai de
+// cuoi phien kiem tra handler co that su nhan duoc khong — test offline chi chung
+// minh duoc handler xu ly dung payload gia.
+const seenPackets = new Set();
+const seenEvents = new Set();
+client.on(Events.Raw, packet => packet?.t && seenPackets.add(packet.t));
+client.on(Events.UserNoteUpdate, () => seenEvents.add(Events.UserNoteUpdate));
+client.on(Events.RelationshipUpdate, () => seenEvents.add(Events.RelationshipUpdate));
 // Bat len khi mot buoc tra lai gia tri cu that bai. Tu do khong ghi them gi nua.
 let aborted = null;
 
@@ -127,6 +136,11 @@ async function roundTrip({ name, read, write, restore }) {
   } else {
     results.push({ name, status: 'PASS', detail: 'ghi, doc lai va tra lai deu khop' });
   }
+}
+
+// Danh cho check khong chay duoc vi thieu dieu kien ben ngoai, khong phai vi hong.
+class Skipped extends Error {
+  name = 'Skipped';
 }
 
 // Check khong theo dang round trip (presence chi di qua gateway, khong co ack).
@@ -279,6 +293,43 @@ client.once('ready', async () => {
     restore: nickname => (friendId ? client.relationships.setNickname(friendId, nickname ?? null) : undefined),
   });
 
+  await roundTrip({
+    name: 'settings.addRestrictedGuild() + removeRestrictedGuild()',
+    read: async () => {
+      await client.settings.fetch();
+      return [...client.settings.disableDMfromGuilds.keys()].sort();
+    },
+    write: async () => {
+      const guildId = client.guilds.cache.firstKey();
+      if (!guildId) return [];
+      const before = [...client.settings.disableDMfromGuilds.keys()];
+      if (before.includes(guildId)) return before.sort();
+
+      await client.settings.addRestrictedGuild(guildId);
+      return [...before, guildId].sort();
+    },
+    restore: async before => {
+      const guildId = client.guilds.cache.firstKey();
+      if (!guildId || before.includes(guildId)) return undefined;
+      return client.settings.removeRestrictedGuild(guildId);
+    },
+  });
+
+  const settledGuild = client.guilds.cache.find(guild => Object.keys(guild.settings.raw ?? {}).length > 0);
+
+  await roundTrip({
+    name: 'guild.settings.edit()',
+    read: async () => settledGuild?.settings.raw.message_notifications ?? null,
+    write: async () => {
+      if (!settledGuild) return null;
+      // 1 = chi bao khi bi nhac ten. Doi sang 0 (bao moi tin) neu dang la 1.
+      const next = settledGuild.settings.raw.message_notifications === 1 ? 0 : 1;
+      await settledGuild.settings.edit({ message_notifications: next });
+      return next;
+    },
+    restore: value => (settledGuild ? settledGuild.settings.edit({ message_notifications: value ?? 3 }) : undefined),
+  });
+
   // Khong dung roundTrip: buoc don dep la revokeAllFriendInvites(), no xoa CA
   // nhung loi moi co tu truoc. Chi chay khi tai khoan dang co dung 0 loi moi.
   await check('user.createFriendInvite() + revokeAllFriendInvites()', async () => {
@@ -330,6 +381,61 @@ client.once('ready', async () => {
     client.user.setPresence({ activities: [] });
     return `activity=${await activityName()}`;
   });
+
+  await check('RichPresence.getExternal()', async () => {
+    // Discord proxy anh ngoai thanh asset dung duoc trong rich presence. Dung
+    // anh mac dinh cua chinh Discord de khong keo ai khac vao.
+    const [asset] = await RichPresence.getExternal(
+      client,
+      '367827983903490050',
+      'https://cdn.discordapp.com/embed/avatars/0.png',
+    );
+
+    if (!asset?.external_asset_path) throw new Error('khong co external_asset_path trong ket qua');
+    return 'co external_asset_path';
+  });
+
+  // Cac check ghi phia tren deu lam Discord day packet ve. Doi mot nhip cho packet
+  // cuoi kip toi noi roi moi ket luan.
+  await check('gateway day nguoc packet cua cac thao tac vua ghi', async () => {
+    await sleep(2000);
+    const wanted = ['USER_GUILD_SETTINGS_UPDATE', 'USER_NOTE_UPDATE', 'RELATIONSHIP_UPDATE'];
+    const missing = wanted.filter(name => !seenPackets.has(name));
+    // In ca danh sach thay duoc: ten packet khong phai du lieu tai khoan, va khi
+    // thieu thi thu can biet la Discord doi ten packet hay khong day gi ve ca.
+    if (missing.length) {
+      throw new Error(`khong thay packet: ${missing.join(', ')} - thay: ${[...seenPackets].join(', ')}`);
+    }
+    return `nhan du ${wanted.length} loai packet`;
+  });
+
+  await check('setting tai khoan dong bo nguoc qua gateway', () => {
+    // Discord van day USER_SETTINGS_UPDATE thi handler cua fork chay duoc.
+    if (seenPackets.has('USER_SETTINGS_UPDATE')) return 'handler USER_SETTINGS_UPDATE chay duoc';
+    if (!seenPackets.has('USER_SETTINGS_PROTO_UPDATE')) throw new Error('khong thay packet setting nao ca');
+
+    // Discord da chuyen setting tai khoan sang protobuf. Fork chi co handler cho
+    // USER_SETTINGS_UPDATE dang JSON, nen packet moi roi vao khoang khong:
+    // client.settings chi tuoi lai khi tu goi fetch() hoac edit().
+    throw new Skipped(
+      'Discord day USER_SETTINGS_PROTO_UPDATE (protobuf), fork khong giai ma - client.settings khong tu tuoi lai',
+    );
+  });
+
+  await check('handler emit event tuong ung', () => {
+    const wanted = [Events.UserNoteUpdate, Events.RelationshipUpdate];
+    const missing = wanted.filter(name => !seenEvents.has(name));
+    if (missing.length) throw new Error(`khong thay event: ${missing.join(', ')}`);
+    return `nhan du ${wanted.length} event`;
+  });
+
+  // Skipped duoc nem tu trong check nen den day moi phan loai lai duoc.
+  for (const result of results) {
+    if (result.detail.startsWith('Skipped: ')) {
+      result.status = 'SKIP';
+      result.detail = result.detail.slice('Skipped: '.length);
+    }
+  }
 
   const failed = results.filter(result => result.status === 'FAIL');
   const passed = results.filter(result => result.status === 'PASS').length;

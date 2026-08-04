@@ -82,6 +82,22 @@ test('send va sendTyping duoc mo lai (upstream chan)', () => {
   client.destroy();
 });
 
+test('_update khong chet vi recipients — CHANNEL_UPDATE cua group DM', () => {
+  const { client, channel } = makeChannel();
+
+  // Base#_clone chay Object.assign(Object.create(this), this). Dat `recipients`
+  // thanh accessor chi-doc ngay tren instance lam phep gan do ném TypeError, tuc
+  // la moi CHANNEL_UPDATE cua group DM giet ca client trong handler packet.
+  const old = channel._update({ ...GROUP_DM, name: 'Ten moi' });
+
+  assert.strictEqual(channel.name, 'Ten moi');
+  assert.strictEqual(old.name, 'Nhom cua toi');
+  assert.strictEqual(channel.recipients.size, 2);
+  assert.deepStrictEqual(channel.toJSON().recipients, ['1', '2']);
+
+  client.destroy();
+});
+
 test('_patch cap nhat name va icon (upstream chi set trong constructor)', () => {
   const { client, channel } = makeChannel();
 

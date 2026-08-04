@@ -63,6 +63,28 @@ found one more:
   code keep working. The `message.delete()` check had been passing for the wrong
   reason — it treated any fetch error as proof of deletion, and 20002 is not that.
 
+Tier 2.6 widened all three suites — group DM management on the sandbox, restricted
+guilds, per-guild notification settings, `RichPresence.getExternal`, fetching
+another user, and asserting that gateway packets really arrive. Two more findings:
+
+- **Any `CHANNEL_UPDATE` for a group DM killed the client.** `GroupDMChannel`
+  installed `recipients` as a read-only accessor directly on the instance, and
+  `Base#_clone()` runs `Object.assign(Object.create(this), this)`, so the clone
+  inherited that accessor and the copy threw
+  `TypeError: Cannot set property recipients`. It surfaced the moment the suite
+  renamed its sandbox, and it was not a failed check — the process died inside the
+  packet handler. Renaming a group DM from any client, not just this one, would
+  have done it. `recipients` is now a getter/setter pair on the prototype, with the
+  setter there only to absorb the upstream constructor's assignment, and `toJSON`
+  names it explicitly since `flatten` only walks own enumerable properties.
+- **Account settings no longer arrive over the gateway.** Discord sends
+  `USER_SETTINGS_PROTO_UPDATE`, a protobuf payload; the fork only handles the old
+  JSON `USER_SETTINGS_UPDATE`, which never fires. Guild settings, notes and
+  relationships all still push fine. The practical effect is that `client.settings`
+  goes stale when something changes it elsewhere — `fetch()` and `edit()` are the
+  only ways to refresh it. Decoding protobuf is out of scope, so this is recorded
+  rather than fixed.
+
 `SKIP` in the table below means the check could not run, not that it passed. The
 four profile writes are blocked by hCaptcha on `PATCH /users/@me`: the library
 behaves correctly by surfacing the `400`, and testing them needs a `captchaSolver`
@@ -76,55 +98,68 @@ mention them at all — absence there means untested, not passing.
 | Area                                                                                                                                                                  | Why it is not in a suite                                                                                                                                                          | What it would take                                                                                                         |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | **Voice, video, Go Live** — `joinChannel`, `playAudio`, `playVideo`, `createStreamConnection`, `joinStreamConnection`, `receiver.createStream`, `guildMemberSpeaking` | The whole stack is `ported` from the v13 fork and has never opened a socket. UDP, RTP packetisation, the voice handshake and encryption can only be proven live                   | A guild with a voice channel, and a second listener to confirm anything is actually audible. Highest risk area in the fork |
-| **Group DM with other people** — `addUser`, `removeUser`, `ring`, `setOwner`, `stopRinging`, `callCreate`/`callUpdate`/`callDelete`, `CallState.setRTCRegion`         | Every one of them needs somebody else in the channel. The sandbox group DM the message suite builds has no other members                                                          | A second account that accepts being added to a group DM                                                                    |
+| **Group DM with other people** — `addUser`, `removeUser`, `ring`, `setOwner`, `stopRinging`, `callCreate`/`callUpdate`/`callDelete`, `CallState.setRTCRegion`         | Every one needs somebody else in the channel. Creating, renaming, re-iconing, inviting into and deleting the sandbox group DM are covered; nothing social is                      | A second account that accepts being added to a group DM                                                                    |
 | **Sending interactions** — `sendSlash`, `clickButton`, `selectMenu`, modal submit, attachment options                                                                 | Needs another bot's commands to be usable in a channel the account can post in. `searchApplicationCommands` is tested, so the discovery route works; actually invoking one is not | A guild with a bot whose slash commands the account may run                                                                |
 | **`acceptInvite`**                                                                                                                                                    | Joining a guild is not undoable in the way the write suite requires, and leaving again is a separate visible action                                                               | A throwaway guild to join and leave                                                                                        |
 | **Profile writes** — `setAboutMe`, `setPronouns`, `setGlobalName`, `setAccentColor`                                                                                   | `PATCH /users/@me` answers with an hCaptcha challenge. They appear as `SKIP` in the table below                                                                                   | A `captchaSolver` configured on the client                                                                                 |
 | **`logout`, `Session#logout`, `logoutAllDevices`**                                                                                                                    | They invalidate the token or kill sessions, including the one running the test                                                                                                    | A throwaway account                                                                                                        |
 | **`QRLogin`, `passLogin`**                                                                                                                                            | `QRLogin` needs a human to scan with a phone; `passLogin` needs the account password and reliably draws a captcha                                                                 | Manual runs, and a solver for the password path                                                                            |
 | **`redeemNitro`, `installUserApps`, `deauthorize`, `authorizeURL`, `setHypeSquad`, `setUsername`**                                                                    | Cost money, change public state, or cannot be undone                                                                                                                              | Deliberately left out; not planned                                                                                         |
+| **Account settings arriving over the gateway**                                                                                                                        | Discord sends `USER_SETTINGS_PROTO_UPDATE`, a protobuf payload the fork does not decode. Its JSON `USER_SETTINGS_UPDATE` handler never fires, so there is nothing to exercise     | A protobuf decoder for `PreloadedUserSettings`; out of scope for now                                                       |
 
 ## Results
 
-| Date             | Suite    | Check                                                | Result |
-| ---------------- | -------- | ---------------------------------------------------- | ------ |
-| 2026-08-04 03:49 | write    | user.setAboutMe()                                    | SKIP   |
-| 2026-08-04 03:49 | write    | user.setPronouns()                                   | SKIP   |
-| 2026-08-04 03:49 | write    | user.setGlobalName()                                 | SKIP   |
-| 2026-08-04 03:49 | write    | user.setAccentColor()                                | SKIP   |
-| 2026-08-04 03:49 | write    | settings.setTheme()                                  | PASS   |
-| 2026-08-04 03:49 | write    | settings.toggleCompactMode()                         | PASS   |
-| 2026-08-04 03:49 | write    | settings.setCustomStatus()                           | PASS   |
-| 2026-08-04 03:49 | write    | notes.updateNote()                                   | PASS   |
-| 2026-08-04 03:49 | write    | relationships.setNickname()                          | PASS   |
-| 2026-08-04 03:49 | write    | user.createFriendInvite() + revokeAllFriendInvites() | PASS   |
-| 2026-08-04 03:49 | write    | setPresence(CustomStatus)                            | PASS   |
-| 2026-08-04 03:49 | write    | setPresence(RichPresence)                            | PASS   |
-| 2026-08-04 03:49 | write    | setPresence(SpotifyRPC)                              | PASS   |
-| 2026-08-04 03:49 | write    | setPresence(clear)                                   | PASS   |
-| 2026-08-04 03:50 | readonly | ready + client.user                                  | PASS   |
-| 2026-08-04 03:50 | readonly | relationships from READY                             | PASS   |
-| 2026-08-04 03:50 | readonly | guilds from READY                                    | PASS   |
-| 2026-08-04 03:50 | readonly | user_guild_settings patched onto Guild               | PASS   |
-| 2026-08-04 03:50 | readonly | settings.fetch()                                     | PASS   |
-| 2026-08-04 03:50 | readonly | sessions.fetch()                                     | PASS   |
-| 2026-08-04 03:50 | readonly | notes.fetch(first friend)                            | PASS   |
-| 2026-08-04 03:50 | readonly | users.fetch(self, force)                             | PASS   |
-| 2026-08-04 03:50 | readonly | billing.fetchPaymentSources()                        | PASS   |
-| 2026-08-04 03:50 | readonly | billing.fetchGuildBoosts()                           | PASS   |
-| 2026-08-04 03:50 | readonly | billing.fetchCurrentSubscription()                   | PASS   |
-| 2026-08-04 03:50 | readonly | user.fetchFriendInvites()                            | PASS   |
-| 2026-08-04 03:50 | readonly | authorizedApplications()                             | PASS   |
-| 2026-08-04 03:50 | readonly | refreshAttachmentURL()                               | PASS   |
-| 2026-08-04 03:50 | readonly | channel.searchApplicationCommands()                  | PASS   |
-| 2026-08-04 04:23 | message  | channel.send()                                       | PASS   |
-| 2026-08-04 04:23 | message  | messages.fetch()                                     | PASS   |
-| 2026-08-04 04:23 | message  | message.edit()                                       | PASS   |
-| 2026-08-04 04:23 | message  | message.reply()                                      | PASS   |
-| 2026-08-04 04:23 | message  | message.react() + go reaction                        | PASS   |
-| 2026-08-04 04:23 | message  | channel.sendTyping()                                 | PASS   |
-| 2026-08-04 04:23 | message  | message.pin() + unpin()                              | PASS   |
-| 2026-08-04 04:23 | message  | send kem file dinh kem                               | PASS   |
-| 2026-08-04 04:23 | message  | awaitMessages()                                      | PASS   |
-| 2026-08-04 04:23 | message  | WebEmbed link duoc Discord unfurl                    | PASS   |
-| 2026-08-04 04:23 | message  | message.delete()                                     | PASS   |
+| Date             | Suite    | Check                                                   | Result |
+| ---------------- | -------- | ------------------------------------------------------- | ------ |
+| 2026-08-04 04:49 | write    | user.setAboutMe()                                       | SKIP   |
+| 2026-08-04 04:49 | write    | user.setPronouns()                                      | SKIP   |
+| 2026-08-04 04:49 | write    | user.setGlobalName()                                    | SKIP   |
+| 2026-08-04 04:49 | write    | user.setAccentColor()                                   | SKIP   |
+| 2026-08-04 04:49 | write    | settings.setTheme()                                     | PASS   |
+| 2026-08-04 04:49 | write    | settings.toggleCompactMode()                            | PASS   |
+| 2026-08-04 04:49 | write    | settings.setCustomStatus()                              | PASS   |
+| 2026-08-04 04:49 | write    | notes.updateNote()                                      | PASS   |
+| 2026-08-04 04:49 | write    | relationships.setNickname()                             | PASS   |
+| 2026-08-04 04:49 | write    | user.createFriendInvite() + revokeAllFriendInvites()    | PASS   |
+| 2026-08-04 04:49 | write    | setPresence(CustomStatus)                               | PASS   |
+| 2026-08-04 04:49 | write    | setPresence(RichPresence)                               | PASS   |
+| 2026-08-04 04:49 | write    | setPresence(SpotifyRPC)                                 | PASS   |
+| 2026-08-04 04:49 | write    | setPresence(clear)                                      | PASS   |
+| 2026-08-04 04:56 | readonly | ready + client.user                                     | PASS   |
+| 2026-08-04 04:56 | readonly | relationships from READY                                | PASS   |
+| 2026-08-04 04:56 | readonly | guilds from READY                                       | PASS   |
+| 2026-08-04 04:56 | readonly | user_guild_settings patched onto Guild                  | PASS   |
+| 2026-08-04 04:56 | readonly | settings.fetch()                                        | PASS   |
+| 2026-08-04 04:56 | readonly | sessions.fetch()                                        | PASS   |
+| 2026-08-04 04:56 | readonly | notes.fetch(first friend)                               | PASS   |
+| 2026-08-04 04:56 | readonly | users.fetch(self, force)                                | PASS   |
+| 2026-08-04 04:56 | readonly | billing.fetchPaymentSources()                           | PASS   |
+| 2026-08-04 04:56 | readonly | billing.fetchGuildBoosts()                              | PASS   |
+| 2026-08-04 04:56 | readonly | billing.fetchCurrentSubscription()                      | PASS   |
+| 2026-08-04 04:56 | readonly | user.fetchFriendInvites()                               | PASS   |
+| 2026-08-04 04:56 | readonly | authorizedApplications()                                | PASS   |
+| 2026-08-04 04:56 | readonly | channel.searchApplicationCommands()                     | PASS   |
+| 2026-08-04 04:56 | message  | channel.send()                                          | PASS   |
+| 2026-08-04 04:56 | message  | messages.fetch()                                        | PASS   |
+| 2026-08-04 04:56 | message  | message.edit()                                          | PASS   |
+| 2026-08-04 04:56 | message  | message.reply()                                         | PASS   |
+| 2026-08-04 04:56 | message  | message.react() + go reaction                           | PASS   |
+| 2026-08-04 04:56 | message  | channel.sendTyping()                                    | PASS   |
+| 2026-08-04 04:56 | message  | message.pin() + unpin()                                 | PASS   |
+| 2026-08-04 04:56 | message  | send kem file dinh kem                                  | PASS   |
+| 2026-08-04 04:56 | message  | awaitMessages()                                         | PASS   |
+| 2026-08-04 04:56 | message  | WebEmbed link duoc Discord unfurl                       | PASS   |
+| 2026-08-04 04:56 | message  | message.delete()                                        | PASS   |
+| 2026-08-04 04:49 | write    | settings.addRestrictedGuild() + removeRestrictedGuild() | PASS   |
+| 2026-08-04 04:49 | write    | guild.settings.edit()                                   | PASS   |
+| 2026-08-04 04:49 | write    | RichPresence.getExternal()                              | PASS   |
+| 2026-08-04 04:49 | write    | gateway day nguoc packet cua cac thao tac vua ghi       | PASS   |
+| 2026-08-04 04:49 | write    | handler emit event tuong ung                            | PASS   |
+| 2026-08-04 04:49 | write    | setting tai khoan dong bo nguoc qua gateway             | SKIP   |
+| 2026-08-04 04:56 | message  | refreshAttachmentURL()                                  | PASS   |
+| 2026-08-04 04:56 | message  | channel.setName()                                       | PASS   |
+| 2026-08-04 04:56 | message  | channel.setIcon()                                       | PASS   |
+| 2026-08-04 04:56 | message  | createInvite() + fetchInvites() + deleteInvite()        | PASS   |
+| 2026-08-04 04:56 | message  | channel.delete()                                        | PASS   |
+| 2026-08-04 04:56 | readonly | users.fetch(friend, force)                              | PASS   |
+| 2026-08-04 04:56 | readonly | relationships.fetch(user)                               | PASS   |

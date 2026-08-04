@@ -142,6 +142,8 @@ client.once('ready', async () => {
       return `ghim=${found} sau khi bo ghim con=${after.items.length}`;
     });
 
+    let attachmentURL = null;
+
     await check('send kem file dinh kem', async () => {
       const message = await channel.send({
         content: `${MARKER} co file`,
@@ -152,7 +154,18 @@ client.once('ready', async () => {
       const attachment = fetched.attachments.first();
       if (!attachment) throw new Error('fetch lai khong thay file dinh kem');
       if (attachment.name !== 'smoke.txt') throw new Error(`ten file lech: ${attachment.name}`);
+      attachmentURL = attachment.url;
       return `ten khop size=${attachment.size}b`;
+    });
+
+    await check('refreshAttachmentURL()', async () => {
+      // Link CDN vua upload o check tren la dau vao that, khong can bien moi truong.
+      if (!attachmentURL) skip('check upload phia tren khong tra ve link nao');
+
+      const [entry] = await client.refreshAttachmentURL(attachmentURL);
+      if (!entry?.refreshed) throw new Error('khong co link moi trong ket qua');
+      const signed = new URL(entry.refreshed).searchParams.has('ex');
+      return `co link moi=${true} co chu ky=${signed}`;
     });
 
     await check('awaitMessages()', async () => {
@@ -198,6 +211,51 @@ client.once('ready', async () => {
         return 'fetch lai bao 10008 Unknown Message';
       }
       throw new Error('xoa xong nhung van fetch lai duoc');
+    });
+
+    // Tu day la cac thao tac quan ly chinh cai group DM sandbox. Lam duoc ma
+    // khong can ai khac trong nhom, nen khong phai doi tier 3.
+    await check('channel.setName()', async () => {
+      await channel.setName(MARKER);
+      const fetched = await client.channels.fetch(sandboxId, { force: true });
+      if (fetched.name !== MARKER) throw new Error(`ten sau khi doi lech: ${fetched.name}`);
+      return 'ten khop sau khi doc lai';
+    });
+
+    await check('channel.setIcon()', async () => {
+      // PNG 1x1 trong suot, du de Discord nhan la anh hop le.
+      const png = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        'base64',
+      );
+
+      await channel.setIcon(png);
+      const fetched = await client.channels.fetch(sandboxId, { force: true });
+      if (!fetched.icon) throw new Error('doc lai khong thay icon');
+      return `co icon hash=${Boolean(fetched.icon)} url=${Boolean(fetched.iconURL())}`;
+    });
+
+    await check('createInvite() + fetchInvites() + deleteInvite()', async () => {
+      const invite = await channel.createInvite(600, 1);
+      if (!invite.code) throw new Error('tao xong nhung khong co code');
+
+      await sleep(CALL_DELAY_MS);
+      const all = await channel.fetchInvites();
+      if (!all.has(invite.code)) throw new Error('khong thay code trong danh sach');
+
+      await sleep(CALL_DELAY_MS);
+      await channel.deleteInvite(invite.code);
+      await sleep(CALL_DELAY_MS);
+      const after = await channel.fetchInvites();
+      if (after.has(invite.code)) throw new Error('xoa xong ma van con trong danh sach');
+      return `tao, liet ke, xoa deu khop (con lai ${after.size})`;
+    });
+
+    await check('channel.delete()', async () => {
+      await channel.delete();
+      // Xoa xong roi thi khoi don o finally nua.
+      sandboxId = null;
+      return 'xoa sandbox bang method cua thu vien';
     });
   } catch (error) {
     results.push({ name: 'dung sandbox group DM', status: 'FAIL', detail: `${error.name}: ${error.message}` });

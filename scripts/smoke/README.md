@@ -10,12 +10,12 @@ history.
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/write.mjs
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/message.mjs
 
-| Script         | Proves                                                                                                                                                                                                  |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `login.mjs`    | P0-P2: REST shim + user account identify + gateway connect, `ready` fires, `client.user` is correct                                                                                                     |
-| `write.mjs`    | Fourteen write checks in **one** login. Every one snapshots the current value, writes, reads back, restores and reads back again. A failed restore stops the whole script and prints the original value |
-| `message.mjs`  | Eleven message-lifecycle checks: send, fetch, edit, reply, react, typing, pin, file upload, collector, WebEmbed unfurl, delete                                                                          |
-| `readonly.mjs` | Fifteen read-only checks in **one** login: relationships, guild settings, settings, sessions, notes, profile, billing, friend invites, authorized apps, attachment refresh, application-command search  |
+| Script         | Proves                                                                                                                                                                                                               |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `login.mjs`    | P0-P2: REST shim + user account identify + gateway connect, `ready` fires, `client.user` is correct                                                                                                                  |
+| `write.mjs`    | Twenty write checks in **one** login. Every one snapshots the current value, writes, reads back, restores and reads back again. A failed restore stops the whole script and prints the original value                |
+| `message.mjs`  | Sixteen checks in a throwaway group DM: send, fetch, edit, reply, react, typing, pin, file upload, attachment refresh, collector, WebEmbed unfurl, delete, and the channel management the sandbox owner can do alone |
+| `readonly.mjs` | Sixteen read-only checks in **one** login: relationships, guild settings, settings, sessions, notes, profile, billing, friend invites, authorized apps, attachment refresh, application-command search               |
 
 Results live in [`results.md`](./results.md) — one table, one row per check, with
 the date of the last run. Check names, dates and pass/fail only, no account data.

@@ -266,8 +266,16 @@ await client.notes.updateNote('123456789', null); // delete
 
 Source: [`src/managers/ClientUserSettingManager.js`](../src/managers/ClientUserSettingManager.js),
 [`src/managers/GuildSettingManager.js`](../src/managers/GuildSettingManager.js)
-· Status: **tested** (read side, plus `setTheme`, `toggleCompactMode` and
-`setCustomStatus` written and restored against a real account)
+· Status: **tested** (read side, plus `setTheme`, `toggleCompactMode`,
+`setCustomStatus`, `addRestrictedGuild`/`removeRestrictedGuild` and
+`Guild#settings.edit` written and restored against a real account)
+
+> **`client.settings` does not stay live.** Discord now pushes account settings as
+> `USER_SETTINGS_PROTO_UPDATE`, a protobuf payload this fork does not decode; the
+> JSON `USER_SETTINGS_UPDATE` handler it does have never fires. Change a setting on
+> another device and this object keeps the old value until you call `fetch()` or
+> `edit()`. Per-guild settings are unaffected — `USER_GUILD_SETTINGS_UPDATE` still
+> arrives as JSON and is handled.
 
 ### Account settings
 
@@ -459,8 +467,9 @@ const [{ refreshed }] = await client.refreshAttachmentURL(oldUrl);
 Source: [`src/structures/GroupDMChannel.js`](../src/structures/GroupDMChannel.js),
 [`src/structures/CallState.js`](../src/structures/CallState.js) · Status: **unit**
 
-> Creating and deleting a group DM is exercised by the message smoke suite, which
-> builds one as its sandbox. Everything that involves another person — `addUser`,
+> The message smoke suite builds a group DM as its sandbox, so `create`,
+> `setName`, `setIcon`, `createInvite`, `fetchInvites`, `deleteInvite` and `delete`
+> are **tested**. Everything that involves another person — `addUser`,
 > `removeUser`, `ring`, `setOwner`, `stopRinging` and the `call*` events — is
 > **untested**; it needs a second account.
 

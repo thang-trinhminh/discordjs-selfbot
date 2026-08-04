@@ -9,12 +9,12 @@ lệnh (tham số lộ ra trong `ps` và shell history).
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/write.mjs
     SMOKE_ALLOW_WRITE=1 node --env-file=.env scripts/smoke/message.mjs
 
-| Script         | Xác nhận                                                                                                                                                                                                  |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `login.mjs`    | P0-P2: REST shim + identify user account + gateway kết nối, `ready` bắn ra, `client.user` đúng                                                                                                            |
-| `write.mjs`    | 14 check có ghi trong **một** phiên login. Mỗi check chụp giá trị hiện tại, ghi, đọc lại, trả lại, rồi đọc lại lần nữa. Trả lại thất bại thì dừng cả script và in giá trị gốc ra                          |
-| `message.mjs`  | 11 check vòng đời tin nhắn: gửi, fetch, sửa, trả lời, thả reaction, typing, ghim, đính kèm file, collector, WebEmbed unfurl, xoá                                                                          |
-| `readonly.mjs` | 15 check chỉ đọc trong **một** phiên login: relationships, guild settings, settings, sessions, notes, profile, thanh toán, lời mời kết bạn, app đã cấp quyền, refresh attachment, tìm application command |
+| Script         | Xác nhận                                                                                                                                                                                                             |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `login.mjs`    | P0-P2: REST shim + identify user account + gateway kết nối, `ready` bắn ra, `client.user` đúng                                                                                                                       |
+| `write.mjs`    | 20 check có ghi trong **một** phiên login. Mỗi check chụp giá trị hiện tại, ghi, đọc lại, trả lại, rồi đọc lại lần nữa. Trả lại thất bại thì dừng cả script và in giá trị gốc ra                                     |
+| `message.mjs`  | 16 check trong một group DM dùng một lần: gửi, fetch, sửa, trả lời, reaction, typing, ghim, đính kèm file, refresh attachment, collector, WebEmbed unfurl, xoá, và các thao tác quản lý kênh mà chủ nhóm tự làm được |
+| `readonly.mjs` | 16 check chỉ đọc trong **một** phiên login: relationships, guild settings, settings, sessions, notes, profile, thanh toán, lời mời kết bạn, app đã cấp quyền, refresh attachment, tìm application command            |
 
 Kết quả nằm ở [`results.md`](results.md) — một bảng duy nhất, mỗi check một dòng kèm ngày chạy gần
 nhất. Chỉ có tên check, ngày và pass/fail, không có số liệu tài khoản.
