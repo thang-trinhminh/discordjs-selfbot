@@ -123,7 +123,7 @@ client.once('ready', async () => {
     });
 
     await check('connection.playAudio()', async () => {
-      if (!connection) throw new Skipped('chua vao duoc kenh');
+      if (!connection) throw new Error('khong vao duoc kenh, xem check joinChannel');
       if (ffmpeg.status !== 0) throw new Skipped(`ffmpeg khong tao duoc file mau: ${ffmpeg.stderr?.slice(-200)}`);
 
       const dispatcher = connection.playAudio(silence);
@@ -133,7 +133,7 @@ client.once('ready', async () => {
     });
 
     await check('connection.createStreamConnection()', async () => {
-      if (!connection) throw new Skipped('chua vao duoc kenh');
+      if (!connection) throw new Error('khong vao duoc kenh, xem check joinChannel');
 
       const stream = await connection.createStreamConnection();
       if (!stream) throw new Error('createStreamConnection resolve nhung khong tra gi');
@@ -141,7 +141,7 @@ client.once('ready', async () => {
     });
 
     await check('receiver.createStream()', async () => {
-      if (!connection) throw new Skipped('chua vao duoc kenh');
+      if (!connection) throw new Error('khong vao duoc kenh, xem check joinChannel');
 
       // Khong ai noi trong kenh nen khong cho du lieu — chi kiem tra dung duoc
       // stream doc mot chieu ma khong no.
@@ -153,7 +153,7 @@ client.once('ready', async () => {
     });
 
     await check('connection.disconnect()', async () => {
-      if (!connection) throw new Skipped('chua vao duoc kenh');
+      if (!connection) throw new Error('khong vao duoc kenh, xem check joinChannel');
 
       const left = waitFor(connection, 'disconnect', READY_TIMEOUT_MS, 'su kien disconnect');
       connection.disconnect();

@@ -108,7 +108,9 @@ does not work, and two of the three reasons were in the fork:
   the DAVE end-to-end encryption protocol, which this stack predates; supporting it
   means MLS key exchange, the way `@discordjs/voice` does through `@snazzah/davey`.
   The suite is kept because it now names the reason in one line, and it will pass
-  the day DAVE is implemented.
+  the day DAVE is implemented. All five of its checks are recorded as `FAIL`, not
+  `SKIP`: the stack really is broken against today's Discord, and a softer word
+  would read as "we did not get around to it".
 
 `SKIP` in the table below means the check could not run, not that it passed. The
 four profile writes are blocked by hCaptcha on `PATCH /users/@me`: the library
@@ -188,8 +190,8 @@ mention them at all — absence there means untested, not passing.
 | 2026-08-04 04:56 | message  | channel.delete()                                        | PASS   |
 | 2026-08-04 04:56 | readonly | users.fetch(friend, force)                              | PASS   |
 | 2026-08-04 04:56 | readonly | relationships.fetch(user)                               | PASS   |
-| 2026-08-04 07:01 | voice    | voice.joinChannel()                                     | FAIL   |
-| 2026-08-04 07:01 | voice    | connection.playAudio()                                  | SKIP   |
-| 2026-08-04 07:01 | voice    | connection.createStreamConnection()                     | SKIP   |
-| 2026-08-04 07:01 | voice    | receiver.createStream()                                 | SKIP   |
-| 2026-08-04 07:01 | voice    | connection.disconnect()                                 | SKIP   |
+| 2026-08-04 10:05 | voice    | voice.joinChannel()                                     | FAIL   |
+| 2026-08-04 10:05 | voice    | connection.playAudio()                                  | FAIL   |
+| 2026-08-04 10:05 | voice    | connection.createStreamConnection()                     | FAIL   |
+| 2026-08-04 10:05 | voice    | receiver.createStream()                                 | FAIL   |
+| 2026-08-04 10:05 | voice    | connection.disconnect()                                 | FAIL   |
