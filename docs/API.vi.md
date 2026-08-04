@@ -763,19 +763,30 @@ Ví dụ: [`examples/SlashCommand.js`](../examples/SlashCommand.js)
 
 Nguồn: [`src/client/voice/`](../src/client/voice) · Trạng thái: **ported**
 
-> **Voice không kết nối được, chấm hết.** Voice gateway của Discord giờ trả lời
-> IDENTIFY bằng close code `4017 E2EE/DAVE protocol required` — thử cả version 8,
-> 7, 6, 5, 4, mỗi lần một session mới tinh, đều như nhau. Mọi bước trước đó đều
-> chạy đúng: voice state update, session id, voice server update, resolve
-> endpoint, mở websocket, nhận HELLO — rồi Discord đòi giao thức mã hoá đầu-cuối
-> DAVE, thứ mà stack này ra đời trước và không biết nói. Muốn hỗ trợ thì phải cài
-> đặt trao đổi khoá MLS của DAVE, như `@discordjs/voice` làm qua `@snazzah/davey`.
-> Chừng nào chưa có, không một thứ nào bên dưới chạy được, và chưa từng có gói
-> audio nào đi qua.
+> **Voice đã nói được DAVE, nhưng vẫn chưa kết nối được.** Từ tháng 3/2026 Discord
+> bắt buộc mã hoá đầu cuối cho mọi voice call không phải stage, và trước đây trả lời
+> IDENTIFY bằng `4017 E2EE/DAVE protocol required` — thử cả version 8, 7, 6, 5, 4
+> đều như nhau. Chỗ đó đã sửa: stack bọc `@snazzah/davey`, đúng binding MLS native
+> mà `@discordjs/voice` dùng, nói được frame nhị phân của DAVE, chạy đủ bắt tay
+> epoch và transition, và mã hoá đầu cuối audio **bên trong** lớp mã hoá transport
+> sẵn có.
 >
-> Voice còn cần hai thứ mà lib **cố tình không** bundle, vì đó là lựa chọn của
-> người dùng: `ffmpeg` trong `PATH`, và một binding Opus (`@discordjs/opus`, hoặc
-> `opusscript` nếu không build được native). `prism-media` tự tìm cái nào có.
+> Thứ còn lại là `4006 Session is no longer valid`, và nó không phải lỗi của lib.
+> Mọi field trong IDENTIFY đã đo với gateway thật: `server_id`, `channel_id`,
+> `user_id`, `token` lấy từ `VOICE_SERVER_UPDATE` của chính lần chạy đó, và
+> `session_id` khớp từng ký tự với `sessionInfo.sessionId` của shard. Cùng một mã
+> 4006 không có trong tài liệu này cũng được báo ở nơi khác với tài khoản người
+> dùng, và bám theo voice region chứ không theo code client. Chừng nào Discord còn
+> trả về nó, không gói audio nào đi qua được.
+>
+> **`@snazzah/davey` là `optionalDependency` và thiếu nó thì voice không chạy.**
+> `npm i @snazzah/davey`. Thiếu, `joinChannel` ném ra một câu nói rõ tên gói chứ
+> không để bạn tự đi mò 4017. Voice còn cần hai thứ mà lib **cố tình không** bundle,
+> vì đó là lựa chọn của người dùng: `ffmpeg` trong `PATH`, và một binding Opus
+> (`@discordjs/opus`, hoặc `opusscript` nếu không build được native). `prism-media`
+> tự tìm cái nào có.
+>
+> Video và Go Live **chưa** được mã hoá đầu cuối. Chỉ audio thôi.
 
 > Toàn bộ phần này chép nguyên từ bản v13 và **chưa bao giờ chạy với voice
 > channel thật**. Mọi file load được, phần thuần tuý có test — bảng codec, dựng

@@ -36,11 +36,12 @@ có check ném lỗi. DM với chính mình thì không dùng được, Discord 
 marker qua dịch vụ render bên thứ ba ghi trong `WebEmbed.DEFAULT_BASE_URL`; đặt `SMOKE_SKIP_WEBEMBED=1`
 để bỏ check đó.
 
-`voice.mjs` cần `SMOKE_VOICE_CHANNEL_ID`, `ffmpeg` trong `PATH`, và một binding Opus (ở đây `opusscript`
-là devDependency; bản thân lib không bundle cái nào, vì đó là lựa chọn của người dùng). Vào voice
-channel là **cả server nhìn thấy**, khác mọi suite còn lại — chọn kênh vắng. Hiện nó fail ngay check
-đầu: Discord trả lời IDENTIFY voice bằng `4017 E2EE/DAVE protocol required` ở mọi version gateway, mà
-fork không biết nói DAVE.
+`voice.mjs` cần `SMOKE_VOICE_CHANNEL_ID`, `@snazzah/davey` (`optionalDependency` — thiếu nó voice không
+kết nối được), `ffmpeg` trong `PATH`, và một binding Opus (ở đây `opusscript` là devDependency; bản thân
+lib không bundle hai thứ sau, vì đó là lựa chọn của người dùng). Vào voice channel là **cả server nhìn
+thấy**, khác mọi suite còn lại — chọn kênh vắng. Hiện vẫn fail ngay check đầu: `4017 E2EE/DAVE protocol
+required` đã hết vì fork nói được DAVE, nhưng Discord đổi sang `4006 Session is no longer valid`, trong
+khi mọi field của IDENTIFY đã đo là đúng với gateway thật.
 
 `interaction.mjs` nhận `SMOKE_INTERACTION_CHANNEL_ID`, điền id trần hoặc dán thẳng link kênh từ Discord
 đều được. Kênh phải có bot mà bạn được phép chạy lệnh. Mặc định script chỉ chọn lệnh không có tham số

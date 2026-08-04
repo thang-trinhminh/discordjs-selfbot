@@ -40,12 +40,14 @@ half way. A DM with yourself is not an option; Discord answers `400`. Its WebEmb
 check pushes the marker string through the third-party render service named in
 `WebEmbed.DEFAULT_BASE_URL`; set `SMOKE_SKIP_WEBEMBED=1` to leave that one out.
 
-`voice.mjs` needs `SMOKE_VOICE_CHANNEL_ID`, `ffmpeg` on `PATH`, and an Opus binding
-(`opusscript` is a devDependency here; the library itself bundles neither, since
-both are the consumer's choice). Joining a voice channel is **visible to the whole
-server**, unlike every other suite — pick a quiet channel. It fails at the first
-check today: Discord answers the voice IDENTIFY with `4017 E2EE/DAVE protocol
-required` on every gateway version, and the fork does not speak DAVE.
+`voice.mjs` needs `SMOKE_VOICE_CHANNEL_ID`, `@snazzah/davey` (an `optionalDependency`
+— without it voice cannot connect at all), `ffmpeg` on `PATH`, and an Opus binding
+(`opusscript` is a devDependency here; the library itself bundles neither of the last
+two, since both are the consumer's choice). Joining a voice channel is **visible to
+the whole server**, unlike every other suite — pick a quiet channel. It still fails
+at the first check: `4017 E2EE/DAVE protocol required` is gone now that the fork
+speaks DAVE, but Discord answers with `4006 Session is no longer valid` instead, with
+every IDENTIFY field verified correct against a live gateway.
 
 `interaction.mjs` takes `SMOKE_INTERACTION_CHANNEL_ID`, which accepts either a raw
 id or a channel link pasted straight out of Discord. The channel needs a bot whose
