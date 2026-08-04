@@ -243,3 +243,20 @@ test('websocket voice khong reconnect vo ich khi ma dong la vinh vien', async ()
   await sleep(20);
   assert.strictEqual(reconnects, 1);
 });
+
+test('opcode DAVE khop voi discord-api-types', () => {
+  const { VoiceOpcodes: ApiVoiceOpcodes } = require('discord-api-types/voice/v8');
+
+  assert.strictEqual(VoiceOpcodes.CLIENTS_CONNECT, ApiVoiceOpcodes.ClientsConnect);
+  assert.strictEqual(VoiceOpcodes.DAVE_PREPARE_TRANSITION, ApiVoiceOpcodes.DavePrepareTransition);
+  assert.strictEqual(VoiceOpcodes.DAVE_EXECUTE_TRANSITION, ApiVoiceOpcodes.DaveExecuteTransition);
+  assert.strictEqual(VoiceOpcodes.DAVE_TRANSITION_READY, ApiVoiceOpcodes.DaveTransitionReady);
+  assert.strictEqual(VoiceOpcodes.DAVE_PREPARE_EPOCH, ApiVoiceOpcodes.DavePrepareEpoch);
+  assert.strictEqual(VoiceOpcodes.DAVE_MLS_EXTERNAL_SENDER, ApiVoiceOpcodes.DaveMlsExternalSender);
+  assert.strictEqual(VoiceOpcodes.DAVE_MLS_KEY_PACKAGE, ApiVoiceOpcodes.DaveMlsKeyPackage);
+  assert.strictEqual(VoiceOpcodes.DAVE_MLS_PROPOSALS, ApiVoiceOpcodes.DaveMlsProposals);
+  assert.strictEqual(VoiceOpcodes.DAVE_MLS_COMMIT_WELCOME, ApiVoiceOpcodes.DaveMlsCommitWelcome);
+  assert.strictEqual(VoiceOpcodes.DAVE_MLS_ANNOUNCE_COMMIT_TRANSITION, ApiVoiceOpcodes.DaveMlsAnnounceCommitTransition);
+  assert.strictEqual(VoiceOpcodes.DAVE_MLS_WELCOME, ApiVoiceOpcodes.DaveMlsWelcome);
+  assert.strictEqual(VoiceOpcodes.DAVE_MLS_INVALID_COMMIT_WELCOME, ApiVoiceOpcodes.DaveMlsInvalidCommitWelcome);
+});

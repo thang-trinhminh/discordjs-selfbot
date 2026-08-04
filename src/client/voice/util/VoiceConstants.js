@@ -91,9 +91,23 @@ const VoiceOpcodes = {
   RESUME: 7,
   HELLO: 8,
   RESUMED: 9,
+  // Discord gửi cả danh sách người đang trong kênh qua opcode này. DAVE cần nó
+  // để `processProposals` biết ai là người mới, nên bản port thiếu 11 là thiếu thật.
+  CLIENTS_CONNECT: 11,
   SOURCES: 12,
   CLIENT_CONNECT: 12,
   CLIENT_DISCONNECT: 13,
+  DAVE_PREPARE_TRANSITION: 21,
+  DAVE_EXECUTE_TRANSITION: 22,
+  DAVE_TRANSITION_READY: 23,
+  DAVE_PREPARE_EPOCH: 24,
+  DAVE_MLS_EXTERNAL_SENDER: 25,
+  DAVE_MLS_KEY_PACKAGE: 26,
+  DAVE_MLS_PROPOSALS: 27,
+  DAVE_MLS_COMMIT_WELCOME: 28,
+  DAVE_MLS_ANNOUNCE_COMMIT_TRANSITION: 29,
+  DAVE_MLS_WELCOME: 30,
+  DAVE_MLS_INVALID_COMMIT_WELCOME: 31,
 };
 
 /**
