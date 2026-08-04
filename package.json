@@ -18,6 +18,7 @@
     "src",
     "typings",
     "LICENSE",
+    "LICENSE-APACHE",
     "NOTICE"
   ],
   "engines": {
