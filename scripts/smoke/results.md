@@ -129,13 +129,27 @@ layer that was ours has been fixed:
   `VOICE_STATE_UPDATE` arrives and it belongs to this account. Restoring the old
   `streams`/`video` payload changes nothing, so the IDENTIFY split is not the cause
   either. Discord answers 4006 anyway, from a Hong Kong endpoint
-  (`c-hkg12-*.discord.media`), and hands back an identical voice token across
-  separate logins. This matches the open, undocumented 4006 reports against user
-  accounts elsewhere ([discord.py-self#870](https://github.com/dolfies/discord.py-self/issues/870),
-  [discord.py#10207](https://github.com/Rapptz/discord.py/issues/10207)), where the
-  failure tracked voice region rather than client code. All five voice checks stay
-  `FAIL`, not `SKIP`: voice still does not work against today's Discord, and a
-  softer word would read as "we did not get around to it".
+  and hands back an identical voice token across separate logins. This matches the
+  open, undocumented 4006 reports against user accounts elsewhere
+  ([discord.py-self#870](https://github.com/dolfies/discord.py-self/issues/870),
+  [discord.py#10207](https://github.com/Rapptz/discord.py/issues/10207)). All five
+  voice checks stay `FAIL`, not `SKIP`: voice still does not work against today's
+  Discord, and a softer word would read as "we did not get around to it".
+- **4006 follows the voice server, not the region.** `rtcRegion` was forced to
+  `singapore` (`c-sin12`), `japan` (`c-nrt05`, `c-nrt07`, `c-nrt08`, `c-nrt10`,
+  `c-nrt12`), `us-east` (`c-iad22`) and `rotterdam` (`c-ams01`), and set back to
+  `auto` afterwards. Nearly all answered 4006. Exactly one — a `c-nrt12` box in
+  Japan — did not: it took the IDENTIFY, sent READY and SESSION_DESCRIPTION with a
+  DAVE protocol version, and began the MLS handshake. So the stack does work when it
+  lands on a voice server willing to talk; which server you are handed is luck.
+- **That one cooperative server exposed a real bug, now fixed.** It answered with
+  `No session available`, thrown by our own `DAVESession`: the underlying davey
+  session was only created on `dave_prepare_epoch` (opcode 24), but the voice server
+  sends the external sender (25) and proposals (27) _before_ announcing the epoch.
+  `@discordjs/voice` calls `session.reinit()` the moment it builds the session; this
+  port had dropped that line. `createDaveSession` now initialises eagerly, with a
+  regression test. No amount of offline testing would have found this — only a voice
+  server that got far enough to send the frame.
 
 Group DM with a second account passes end to end, and turned up an API gap rather
 than a bug:

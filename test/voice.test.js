@@ -652,14 +652,33 @@ test('createDaveSession tao session voi user va channel hien tai', () => {
   assert.strictEqual(dave.channelId, '444');
 });
 
+test('createDaveSession khoi tao ngay, khong doi opcode 24', () => {
+  const { connection, sentBinary } = makeVoiceConnection();
+  const dave = connection.createDaveSession(1);
+
+  // Voice server gui external sender (25) va proposals (27) truoc khi bao epoch.
+  // Doi `prepareEpoch` moi tao session thi hai opcode do nem "No session available".
+  assert.notStrictEqual(dave.session, null);
+  assert.strictEqual(sentBinary[0].op, VoiceOpcodes.DAVE_MLS_KEY_PACKAGE);
+
+  // Davey van tu tu choi du lieu rac, nhung loi phai la loi parse chu khong phai
+  // "No session available" — do moi la bang chung session da ton tai.
+  assert.throws(
+    () => dave.setExternalSender(Buffer.alloc(0)),
+    error => !/No session available/.test(error.message),
+  );
+});
+
 test('key package cua session duoc gui bang opcode 26', () => {
   const { connection, sentBinary } = makeVoiceConnection();
   const dave = connection.createDaveSession(1);
 
-  dave.emit('keyPackage', Buffer.from('kp'));
-
+  // CreateDaveSession tu reinit, nen key package that da duoc gui roi.
   assert.strictEqual(sentBinary[0].op, VoiceOpcodes.DAVE_MLS_KEY_PACKAGE);
-  assert.strictEqual(sentBinary[0].payload.toString('utf8'), 'kp');
+  assert.ok(sentBinary[0].payload.length > 0);
+
+  dave.emit('keyPackage', Buffer.from('kp'));
+  assert.strictEqual(sentBinary.at(-1).payload.toString('utf8'), 'kp');
 });
 
 test('transition hong duoc bao lai bang opcode 31', () => {
@@ -677,8 +696,7 @@ test('transition hong duoc bao lai bang opcode 31', () => {
 test('opcode 21 voi transition khac 0 thi tra loi bang opcode 23', () => {
   const { connection, sentPackets } = makeVoiceConnection();
   connection.dave = connection.createDaveSession(1);
-  connection.dave.createSession = () => makeDaveStub();
-  connection.dave.reinit();
+  connection.dave.session = makeDaveStub();
 
   connection.onDaveMessage({
     op: VoiceOpcodes.DAVE_PREPARE_TRANSITION,
@@ -694,8 +712,7 @@ test('opcode 21 voi transition khac 0 thi tra loi bang opcode 23', () => {
 test('opcode 21 voi transition 0 thi khong tra loi', () => {
   const { connection, sentPackets } = makeVoiceConnection();
   connection.dave = connection.createDaveSession(1);
-  connection.dave.createSession = () => makeDaveStub();
-  connection.dave.reinit();
+  connection.dave.session = makeDaveStub();
 
   connection.onDaveMessage({
     op: VoiceOpcodes.DAVE_PREPARE_TRANSITION,
@@ -708,8 +725,7 @@ test('opcode 21 voi transition 0 thi khong tra loi', () => {
 test('opcode 27 gui commit va welcome lai bang opcode 28', () => {
   const { connection, sentBinary } = makeVoiceConnection();
   connection.dave = connection.createDaveSession(1);
-  connection.dave.createSession = () => makeDaveStub();
-  connection.dave.reinit();
+  connection.dave.session = makeDaveStub();
   sentBinary.length = 0;
 
   connection.onDaveBinary({
@@ -725,8 +741,7 @@ test('opcode 25 nap external sender vao session', () => {
   const { connection } = makeVoiceConnection();
   connection.dave = connection.createDaveSession(1);
   const stub = makeDaveStub();
-  connection.dave.createSession = () => stub;
-  connection.dave.reinit();
+  connection.dave.session = stub;
 
   connection.onDaveBinary({ op: VoiceOpcodes.DAVE_MLS_EXTERNAL_SENDER, payload: Buffer.from('sender') });
 
@@ -736,8 +751,7 @@ test('opcode 25 nap external sender vao session', () => {
 test('opcode 29 xu ly xong thi bao san sang bang opcode 23', () => {
   const { connection, sentPackets } = makeVoiceConnection();
   connection.dave = connection.createDaveSession(1);
-  connection.dave.createSession = () => makeDaveStub();
-  connection.dave.reinit();
+  connection.dave.session = makeDaveStub();
 
   connection.onDaveBinary({
     op: VoiceOpcodes.DAVE_MLS_ANNOUNCE_COMMIT_TRANSITION,

@@ -665,6 +665,13 @@ class VoiceConnection extends EventEmitter {
         })
         .catch(() => null),
     );
+
+    // Khởi tạo ngay, đừng đợi opcode 24. Voice server gửi external sender (25) và
+    // proposals (27) trước khi báo epoch, nên hoãn tới `prepareEpoch` là gặp
+    // "No session available" — đo được ở region Nhật, nơi bắt tay thật sự chạy tới
+    // bước này.
+    dave.reinit();
+
     return dave;
   }
 
