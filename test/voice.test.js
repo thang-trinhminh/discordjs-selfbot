@@ -749,3 +749,69 @@ test('DAVE binary bi bo qua khi chua co session', () => {
 
   assert.deepStrictEqual(sentBinary, []);
 });
+
+test('audio duoc E2EE truoc khi ma hoa transport', () => {
+  const AudioDispatcher = require('../src/client/voice/dispatcher/AudioDispatcher.js');
+
+  const dispatcher = Object.create(AudioDispatcher.prototype);
+  dispatcher.player = {
+    voiceConnection: { dave: { encrypt: buffer => Buffer.concat([Buffer.from('e2ee:'), buffer]) } },
+  };
+
+  assert.strictEqual(dispatcher._daveEncrypt(Buffer.from('opus')).toString('utf8'), 'e2ee:opus');
+});
+
+test('khong co session DAVE thi gui opus tran', () => {
+  const AudioDispatcher = require('../src/client/voice/dispatcher/AudioDispatcher.js');
+
+  const dispatcher = Object.create(AudioDispatcher.prototype);
+  dispatcher.player = { voiceConnection: { dave: null } };
+
+  assert.strictEqual(dispatcher._daveEncrypt(Buffer.from('opus')).toString('utf8'), 'opus');
+});
+
+test('goi nhan duoc giai ma E2EE sau khi giai ma transport', () => {
+  const PacketHandler = require('../src/client/voice/receiver/PacketHandler.js');
+
+  const handler = Object.create(PacketHandler.prototype);
+  handler.receiver = {
+    connection: { dave: { decrypt: (packet, userId) => Buffer.from(`${userId}:${packet.toString('utf8')}`) } },
+  };
+
+  const packet = { header: { payloadType: getPayloadType('opus') }, payload: Buffer.from('opus') };
+  const result = handler._daveDecrypt(packet, '333');
+
+  assert.strictEqual(result.payload.toString('utf8'), '333:opus');
+});
+
+test('decrypt tra null thi bo goi', () => {
+  const PacketHandler = require('../src/client/voice/receiver/PacketHandler.js');
+
+  const handler = Object.create(PacketHandler.prototype);
+  handler.receiver = { connection: { dave: { decrypt: () => null } } };
+
+  const packet = { header: { payloadType: getPayloadType('opus') }, payload: Buffer.from('opus') };
+
+  assert.strictEqual(handler._daveDecrypt(packet, '333'), null);
+});
+
+test('goi khong phai opus va loi parse di qua nguyen ven', () => {
+  const PacketHandler = require('../src/client/voice/receiver/PacketHandler.js');
+
+  const handler = Object.create(PacketHandler.prototype);
+  handler.receiver = {
+    connection: {
+      dave: {
+        decrypt: () => {
+          throw new Error('khong duoc goi');
+        },
+      },
+    },
+  };
+
+  const video = { header: { payloadType: getPayloadType('H264') }, payload: Buffer.from('frame') };
+  assert.strictEqual(handler._daveDecrypt(video, '333'), video);
+
+  const failure = new Error('parse hong');
+  assert.strictEqual(handler._daveDecrypt(failure, '333'), failure);
+});

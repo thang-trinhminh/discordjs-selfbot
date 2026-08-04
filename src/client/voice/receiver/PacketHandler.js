@@ -228,12 +228,32 @@ class PacketHandler extends EventEmitter {
     }
   }
 
+  /**
+   * Giải mã đầu cuối phần payload của một gói đã qua giải mã transport.
+   * @param {Object|Error} packet Gói đã parse
+   * @param {Snowflake} userId Người gửi
+   * @returns {?Object} `null` nghĩa là bỏ gói này
+   * @private
+   */
+  _daveDecrypt(packet, userId) {
+    const { dave } = this.receiver.connection;
+    if (!dave || packet instanceof Error || !packet.payload) return packet;
+    if (packet.header.payloadType !== getPayloadType('opus')) return packet;
+
+    const payload = dave.decrypt(packet.payload, userId);
+    if (payload === null) return null;
+
+    packet.payload = payload;
+    return packet;
+  }
+
   push(buffer) {
     const ssrc = buffer.readUInt32BE(8);
     let userStat, packet;
     if (this.connection.ssrcMap.has(ssrc)) {
       userStat = this.connection.ssrcMap.get(ssrc); // Audio_ssrc
-      packet = this.parseBuffer(buffer);
+      packet = this._daveDecrypt(this.parseBuffer(buffer), userStat.userId);
+      if (packet === null) return;
       this.audioReceiver(ssrc, userStat, packet);
       this.audioReceiverForStream(ssrc, userStat, packet);
     } else if (this.connection.ssrcMap.has(ssrc - 1)) {
