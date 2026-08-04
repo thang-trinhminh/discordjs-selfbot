@@ -86,9 +86,8 @@ another user, and asserting that gateway packets really arrive. Two more finding
   only ways to refresh it. Decoding protobuf is out of scope, so this is recorded
   rather than fixed.
 
-Tier 3 reached voice, the one area copied wholesale from v13 and never run. It
-still does not work, but the reasons are now four deep instead of one, and every
-layer that was ours has been fixed:
+Tier 3 reached voice, the one area copied wholesale from v13 and never run. It now
+works, but only after five separate faults, every one of them in the fork:
 
 - **A user account could never join a guild voice channel.** `joinChannel` gates on
   `channel.joinable`, which asks `guild.members.me` for permissions — and a user
@@ -121,35 +120,40 @@ layer that was ours has been fixed:
   `VOICE_STATE_UPDATE` in the channel, not only the client's own: someone else
   leaving ran `_disconnect()` on our connection, and someone else joining overwrote
   our `sessionId` with theirs. Both are fixed.
-- **The wall now is `4006 Session is no longer valid`, and it is not ours.** Every
-  field the library controls was verified against a live gateway: `server_id` is the
-  guild, `channel_id` the voice channel, `user_id` the account, `token` comes from
-  the `VOICE_SERVER_UPDATE` of that same run, and `session_id` matches the shard's
-  own `sessionInfo.sessionId` byte for byte — measured, not assumed. Only one
-  `VOICE_STATE_UPDATE` arrives and it belongs to this account. Restoring the old
-  `streams`/`video` payload changes nothing, so the IDENTIFY split is not the cause
-  either. Discord answers 4006 anyway, from a Hong Kong endpoint
-  and hands back an identical voice token across separate logins. This matches the
-  open, undocumented 4006 reports against user accounts elsewhere
-  ([discord.py-self#870](https://github.com/dolfies/discord.py-self/issues/870),
-  [discord.py#10207](https://github.com/Rapptz/discord.py/issues/10207)). All five
-  voice checks stay `FAIL`, not `SKIP`: voice still does not work against today's
-  Discord, and a softer word would read as "we did not get around to it".
-- **4006 follows the voice server, not the region.** `rtcRegion` was forced to
-  `singapore` (`c-sin12`), `japan` (`c-nrt05`, `c-nrt07`, `c-nrt08`, `c-nrt10`,
-  `c-nrt12`), `us-east` (`c-iad22`) and `rotterdam` (`c-ams01`), and set back to
-  `auto` afterwards. Nearly all answered 4006. Exactly one — a `c-nrt12` box in
-  Japan — did not: it took the IDENTIFY, sent READY and SESSION_DESCRIPTION with a
-  DAVE protocol version, and began the MLS handshake. So the stack does work when it
-  lands on a voice server willing to talk; which server you are handed is luck.
-- **That one cooperative server exposed a real bug, now fixed.** It answered with
-  `No session available`, thrown by our own `DAVESession`: the underlying davey
-  session was only created on `dave_prepare_epoch` (opcode 24), but the voice server
-  sends the external sender (25) and proposals (27) _before_ announcing the epoch.
-  `@discordjs/voice` calls `session.reinit()` the moment it builds the session; this
-  port had dropped that line. `createDaveSession` now initialises eagerly, with a
-  regression test. No amount of offline testing would have found this — only a voice
-  server that got far enough to send the frame.
+- **`4006 Session is no longer valid` was ours after all — a stripped port.**
+  `setTokenAndEndpoint` ran `endpoint.match(/([^:]*)/)[0]`, throwing away everything
+  after the colon. That made sense in the v13 era, when Discord appended a useless
+  `:80`. Today it hands out `c-hkg12-….discord.media:8443`, and dropping the port
+  connected the websocket to port 443 of a _different_ voice process — one that had
+  never heard of our session, so it closed with 4006. The endpoint now keeps its
+  port and only the legacy `:80` is stripped.
+
+  Finding it took ruling out everything else first: `server_id`, `channel_id`,
+  `user_id` and `token` all verified against a live gateway, and `session_id`
+  matching the shard's own `sessionInfo.sessionId` byte for byte. `rtcRegion` was
+  forced to `singapore` (`c-sin12`), `japan` (`c-nrt05`, `c-nrt07`, `c-nrt08`,
+  `c-nrt10`, `c-nrt12`), `us-east` (`c-iad22`) and `rotterdam` (`c-ams01`), then set
+  back to `auto`. The tell was hiding in the endpoint strings all along: every run
+  that failed had been handed `:8443`, and the two that got further had been handed
+  `:443`, where dropping the port happens to land on the right process anyway. It
+  looked like luck of the draw between voice servers; it was which port Discord
+  picked.
+
+- **One cooperative server exposed a second real bug before the port fix landed.**
+  It answered `No session available`, thrown by our own `DAVESession`: the underlying
+  davey session was only created on `dave_prepare_epoch` (opcode 24), but the voice
+  server sends the external sender (25) and proposals (27) _before_ announcing the
+  epoch. `@discordjs/voice` calls `session.reinit()` the moment it builds the session
+  and this port had dropped that line. `createDaveSession` now initialises eagerly.
+
+Voice now passes all five checks against a real channel. The handshake runs end to
+end — IDENTIFY, READY, SELECT_PROTOCOL, `SESSION_DESCRIPTION` carrying
+`secure_frames_version: 1`, a 391-byte MLS key package out on opcode 26, the external
+sender back on opcode 25 — and the client joins, plays, opens a receive stream, opens
+a Go Live connection and leaves cleanly. Alone in a channel the DAVE group never
+reaches an epoch, so `session.ready` stays `false` and audio travels under transport
+encryption only; there is nobody else in the group to encrypt for. Video and Go Live
+are still not end-to-end encrypted at all.
 
 Group DM with a second account passes end to end, and turned up an API gap rather
 than a bug:
@@ -179,44 +183,31 @@ configured on the client.
 Nothing below has ever run against Discord. The table further down does not
 mention them at all — absence there means untested, not passing.
 
-| Area                                                                                                                                                   | Why it is not in a suite                                                                                                                                                                                                                      | What it would take                                                                                                                                                   |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Voice, video, Go Live** — `playAudio`, `playVideo`, `createStreamConnection`, `joinStreamConnection`, `receiver.createStream`, `guildMemberSpeaking` | Blocked, not merely untried. DAVE is now implemented via `@snazzah/davey`, so `4017` is gone; the voice websocket is closed with `4006 Session is no longer valid` instead, with every IDENTIFY field verified correct against a live gateway | A 4006 that is Discord's, not ours — see the Tier 3 notes. Audio would also need `ffmpeg` and an Opus binding, neither bundled. Video and Go Live are still not E2EE |
-| **Group DM ownership** — `setOwner`, `edit({ owner })`                                                                                                 | Everything else in a group DM with a second account is tested now. Handing the group over cannot be undone, and cleanup would leave the channel stranded on the other account                                                                 | A throwaway pair of accounts, run by hand                                                                                                                            |
-| **Interaction components** — `clickButton`, `selectMenu`, modal submit, attachment options                                                             | `searchApplicationCommands` and `sendSlash` are tested now. The reply the suite got back had no components, so there was nothing to click                                                                                                     | A command whose answer carries buttons or a select menu, pinned through `SMOKE_INTERACTION_COMMAND`                                                                  |
-| **`acceptInvite`**                                                                                                                                     | Joining a guild is not undoable in the way the write suite requires, and leaving again is a separate visible action                                                                                                                           | A throwaway guild to join and leave                                                                                                                                  |
-| **Profile writes** — `setAboutMe`, `setPronouns`, `setGlobalName`, `setAccentColor`                                                                    | `PATCH /users/@me` answers with an hCaptcha challenge. They appear as `SKIP` in the table below                                                                                                                                               | A `captchaSolver` configured on the client                                                                                                                           |
-| **`logout`, `Session#logout`, `logoutAllDevices`**                                                                                                     | They invalidate the token or kill sessions, including the one running the test                                                                                                                                                                | A throwaway account                                                                                                                                                  |
-| **`QRLogin`, `passLogin`**                                                                                                                             | `QRLogin` needs a human to scan with a phone; `passLogin` needs the account password and reliably draws a captcha                                                                                                                             | Manual runs, and a solver for the password path                                                                                                                      |
-| **`redeemNitro`, `installUserApps`, `deauthorize`, `authorizeURL`, `setHypeSquad`, `setUsername`**                                                     | Cost money, change public state, or cannot be undone                                                                                                                                                                                          | Deliberately left out; not planned                                                                                                                                   |
-| **Account settings arriving over the gateway**                                                                                                         | Discord sends `USER_SETTINGS_PROTO_UPDATE`, a protobuf payload the fork does not decode. Its JSON `USER_SETTINGS_UPDATE` handler never fires, so there is nothing to exercise                                                                 | A protobuf decoder for `PreloadedUserSettings`; out of scope for now                                                                                                 |
+| Area                                                                                                                                                   | Why it is not in a suite                                                                                                                                                      | What it would take                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **Voice, video, Go Live** — `playAudio`, `playVideo`, `createStreamConnection`, `joinStreamConnection`, `receiver.createStream`, `guildMemberSpeaking` | Exercised against a real channel and passing: join, play, receive stream, Go Live connection, leave. DAVE is implemented via `@snazzah/davey`                                 | Hearing the audio with a human ear. `ffmpeg` and an Opus binding are still the consumer's to install. Video and Go Live are not E2EE |
+| **Group DM ownership** — `setOwner`, `edit({ owner })`                                                                                                 | Everything else in a group DM with a second account is tested now. Handing the group over cannot be undone, and cleanup would leave the channel stranded on the other account | A throwaway pair of accounts, run by hand                                                                                            |
+| **Interaction components** — `clickButton`, `selectMenu`, modal submit, attachment options                                                             | `searchApplicationCommands` and `sendSlash` are tested now. The reply the suite got back had no components, so there was nothing to click                                     | A command whose answer carries buttons or a select menu, pinned through `SMOKE_INTERACTION_COMMAND`                                  |
+| **`acceptInvite`**                                                                                                                                     | Joining a guild is not undoable in the way the write suite requires, and leaving again is a separate visible action                                                           | A throwaway guild to join and leave                                                                                                  |
+| **Profile writes** — `setAboutMe`, `setPronouns`, `setGlobalName`, `setAccentColor`                                                                    | `PATCH /users/@me` answers with an hCaptcha challenge. They appear as `SKIP` in the table below                                                                               | A `captchaSolver` configured on the client                                                                                           |
+| **`logout`, `Session#logout`, `logoutAllDevices`**                                                                                                     | They invalidate the token or kill sessions, including the one running the test                                                                                                | A throwaway account                                                                                                                  |
+| **`QRLogin`, `passLogin`**                                                                                                                             | `QRLogin` needs a human to scan with a phone; `passLogin` needs the account password and reliably draws a captcha                                                             | Manual runs, and a solver for the password path                                                                                      |
+| **`redeemNitro`, `installUserApps`, `deauthorize`, `authorizeURL`, `setHypeSquad`, `setUsername`**                                                     | Cost money, change public state, or cannot be undone                                                                                                                          | Deliberately left out; not planned                                                                                                   |
+| **Account settings arriving over the gateway**                                                                                                         | Discord sends `USER_SETTINGS_PROTO_UPDATE`, a protobuf payload the fork does not decode. Its JSON `USER_SETTINGS_UPDATE` handler never fires, so there is nothing to exercise | A protobuf decoder for `PreloadedUserSettings`; out of scope for now                                                                 |
 
 ## Results
 
 | Suite       | PASS | FAIL | SKIP |
 | ----------- | ---- | ---- | ---- |
-| PASS        | 0    | 0    | 1    |
-| 0           | 0    | 0    | 0    |
-| 15          | 0    | 0    | 0    |
-| 16          | 0    | 0    | 0    |
-| 2           | 0    | 0    | 0    |
-| 8           | 0    | 0    | 0    |
 | write       | 15   | 0    | 5    |
 | readonly    | 16   | 0    | 0    |
 | message     | 16   | 0    | 0    |
 | interaction | 2    | 0    | 2    |
 | groupdm     | 8    | 0    | 0    |
-| voice       | 0    | 5    | 0    |
+| voice       | 5    | 0    | 0    |
 
 | Date             | Suite       | Check                                                   | Result |
 | ---------------- | ----------- | ------------------------------------------------------- | ------ |
-| Suite            | PASS        | FAIL                                                    | SKIP   |
-| 8                | 0           | 0                                                       | 0      |
-| voice            | 0           | 5                                                       | 0      |
-| write            | 15          | 0                                                       | 5      |
-| message          | 16          | 0                                                       | 0      |
-| interaction      | 2           | 0                                                       | 2      |
-| groupdm          | 8           | 0                                                       | 0      |
 | 2026-08-04 04:49 | write       | user.setAboutMe()                                       | SKIP   |
 | 2026-08-04 04:49 | write       | user.setPronouns()                                      | SKIP   |
 | 2026-08-04 04:49 | write       | user.setGlobalName()                                    | SKIP   |
@@ -281,8 +272,8 @@ mention them at all — absence there means untested, not passing.
 | 2026-08-04 11:21 | groupdm     | mo cuoc goi bang voice state update + callCreate        | PASS   |
 | 2026-08-04 11:21 | groupdm     | channel.ring() + callUpdate                             | PASS   |
 | 2026-08-04 11:21 | groupdm     | roi cuoc goi + callDelete                               | PASS   |
-| 2026-08-04 12:49 | voice       | voice.joinChannel()                                     | FAIL   |
-| 2026-08-04 12:49 | voice       | connection.playAudio()                                  | FAIL   |
-| 2026-08-04 12:49 | voice       | connection.createStreamConnection()                     | FAIL   |
-| 2026-08-04 12:49 | voice       | receiver.createStream()                                 | FAIL   |
-| 2026-08-04 12:49 | voice       | connection.disconnect()                                 | FAIL   |
+| 2026-08-04 14:09 | voice       | voice.joinChannel()                                     | PASS   |
+| 2026-08-04 14:09 | voice       | connection.playAudio()                                  | PASS   |
+| 2026-08-04 14:09 | voice       | connection.createStreamConnection()                     | PASS   |
+| 2026-08-04 14:09 | voice       | receiver.createStream()                                 | PASS   |
+| 2026-08-04 14:09 | voice       | connection.disconnect()                                 | PASS   |

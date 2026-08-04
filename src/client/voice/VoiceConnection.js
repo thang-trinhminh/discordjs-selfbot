@@ -359,7 +359,12 @@ class VoiceConnection extends EventEmitter {
       return;
     }
 
-    endpoint = endpoint.match(/([^:]*)/)[0];
+    // Discord trả endpoint kèm cổng. Bản v13 cắt phăng cổng vì thời đó Discord gắn
+    // `:80`, thứ không dùng được cho `wss`. Giờ nó trả `:8443` thật, và cắt đi là
+    // nối vào cổng 443 của một tiến trình voice khác — tiến trình đó không giữ
+    // session của ta nên đóng ngay bằng `4006 Session is no longer valid`. Chỉ bỏ
+    // đúng cái cổng vô nghĩa cũ, giữ nguyên phần còn lại.
+    endpoint = endpoint.replace(/:80$/, '');
     this.emit('debug', `Endpoint resolved as ${endpoint}`);
 
     if (!endpoint) {

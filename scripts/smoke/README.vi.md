@@ -17,7 +17,7 @@ lệnh (tham số lộ ra trong `ps` và shell history).
 | `login.mjs`       | P0-P2: REST shim + identify user account + gateway kết nối, `ready` bắn ra, `client.user` đúng                                                                                                                       |
 | `write.mjs`       | 20 check có ghi trong **một** phiên login. Mỗi check chụp giá trị hiện tại, ghi, đọc lại, trả lại, rồi đọc lại lần nữa. Trả lại thất bại thì dừng cả script và in giá trị gốc ra                                     |
 | `message.mjs`     | 16 check trong một group DM dùng một lần: gửi, fetch, sửa, trả lời, reaction, typing, ghim, đính kèm file, refresh attachment, collector, WebEmbed unfurl, xoá, và các thao tác quản lý kênh mà chủ nhóm tự làm được |
-| `voice.mjs`       | Vào voice channel, phát audio, Go Live, nhận tiếng, rời kênh. Hiện tại nó chỉ chứng minh được Discord chặn fork ở đâu — xem ghi chú dưới                                                                             |
+| `voice.mjs`       | Vào voice channel, phát audio, Go Live, nhận tiếng, rời kênh, kèm bắt tay mã hoá đầu cuối DAVE mà Discord giờ bắt buộc                                                                                               |
 | `interaction.mjs` | Chạy slash command của bot khác với tư cách user: tìm lệnh, gửi, bấm nút, chọn select menu                                                                                                                           |
 | `readonly.mjs`    | 16 check chỉ đọc trong **một** phiên login: relationships, guild settings, settings, sessions, notes, profile, thanh toán, lời mời kết bạn, app đã cấp quyền, refresh attachment, tìm application command            |
 
@@ -39,9 +39,7 @@ marker qua dịch vụ render bên thứ ba ghi trong `WebEmbed.DEFAULT_BASE_URL
 `voice.mjs` cần `SMOKE_VOICE_CHANNEL_ID`, `@snazzah/davey` (`optionalDependency` — thiếu nó voice không
 kết nối được), `ffmpeg` trong `PATH`, và một binding Opus (ở đây `opusscript` là devDependency; bản thân
 lib không bundle hai thứ sau, vì đó là lựa chọn của người dùng). Vào voice channel là **cả server nhìn
-thấy**, khác mọi suite còn lại — chọn kênh vắng. Hiện vẫn fail ngay check đầu: `4017 E2EE/DAVE protocol
-required` đã hết vì fork nói được DAVE, nhưng Discord đổi sang `4006 Session is no longer valid`, trong
-khi mọi field của IDENTIFY đã đo là đúng với gateway thật.
+thấy**, khác mọi suite còn lại — chọn kênh vắng. Cả năm check đều pass.
 
 `interaction.mjs` nhận `SMOKE_INTERACTION_CHANNEL_ID`, điền id trần hoặc dán thẳng link kênh từ Discord
 đều được. Kênh phải có bot mà bạn được phép chạy lệnh. Mặc định script chỉ chọn lệnh không có tham số

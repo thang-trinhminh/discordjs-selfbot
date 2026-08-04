@@ -18,7 +18,7 @@ history.
 | `login.mjs`       | P0-P2: REST shim + user account identify + gateway connect, `ready` fires, `client.user` is correct                                                                                                                  |
 | `write.mjs`       | Twenty write checks in **one** login. Every one snapshots the current value, writes, reads back, restores and reads back again. A failed restore stops the whole script and prints the original value                |
 | `message.mjs`     | Sixteen checks in a throwaway group DM: send, fetch, edit, reply, react, typing, pin, file upload, attachment refresh, collector, WebEmbed unfurl, delete, and the channel management the sandbox owner can do alone |
-| `voice.mjs`       | Joining a voice channel, playing audio, Go Live, receiving, leaving. Currently all it can prove is where Discord stops the fork — see the note below                                                                 |
+| `voice.mjs`       | Joining a voice channel, playing audio, Go Live, receiving, leaving, with the DAVE end-to-end encryption handshake Discord now requires                                                                              |
 | `interaction.mjs` | Running another bot's slash command as a user: search, send, click a button, pick from a select menu                                                                                                                 |
 | `readonly.mjs`    | Sixteen read-only checks in **one** login: relationships, guild settings, settings, sessions, notes, profile, billing, friend invites, authorized apps, attachment refresh, application-command search               |
 
@@ -44,10 +44,7 @@ check pushes the marker string through the third-party render service named in
 — without it voice cannot connect at all), `ffmpeg` on `PATH`, and an Opus binding
 (`opusscript` is a devDependency here; the library itself bundles neither of the last
 two, since both are the consumer's choice). Joining a voice channel is **visible to
-the whole server**, unlike every other suite — pick a quiet channel. It still fails
-at the first check: `4017 E2EE/DAVE protocol required` is gone now that the fork
-speaks DAVE, but Discord answers with `4006 Session is no longer valid` instead, with
-every IDENTIFY field verified correct against a live gateway.
+the whole server**, unlike every other suite — pick a quiet channel. All five checks pass.
 
 `interaction.mjs` takes `SMOKE_INTERACTION_CHANNEL_ID`, which accepts either a raw
 id or a channel link pasted straight out of Discord. The channel needs a bot whose

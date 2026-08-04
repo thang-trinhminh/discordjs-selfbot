@@ -638,6 +638,27 @@ test('identifyExtras rong o voice thuong, co payload Go Live o ca hai lop stream
   assert.notStrictEqual(first.streams, second.streams);
 });
 
+test('endpoint giu nguyen cong Discord tra ve, chi bo :80 cua thoi v13', () => {
+  const VoiceConnection = require('../src/client/voice/VoiceConnection.js');
+
+  const resolve = endpoint => {
+    const connection = Object.create(VoiceConnection.prototype);
+    EventEmitter.call(connection);
+    connection.authentication = {};
+    connection.status = VoiceStatus.AUTHENTICATING;
+    connection.checkAuthenticated = () => {};
+    connection.setTokenAndEndpoint('tok', endpoint);
+    return connection.authentication.endpoint;
+  };
+
+  // Cat cong that lam websocket noi vao 443 cua mot tien trinh voice khac, va tien
+  // trinh do khong giu session cua ta — Discord dong bang 4006.
+  assert.strictEqual(resolve('c-hkg12-abc.discord.media:8443'), 'c-hkg12-abc.discord.media:8443');
+  assert.strictEqual(resolve('c-hkg12-abc.discord.media:443'), 'c-hkg12-abc.discord.media:443');
+  assert.strictEqual(resolve('c-hkg12-abc.discord.media:80'), 'c-hkg12-abc.discord.media');
+  assert.strictEqual(resolve('c-hkg12-abc.discord.media'), 'c-hkg12-abc.discord.media');
+});
+
 test('createDaveSession bo qua khi server khai phien ban 0', () => {
   const { connection } = makeVoiceConnection();
   assert.strictEqual(connection.createDaveSession(0), null);

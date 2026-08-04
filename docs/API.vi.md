@@ -763,24 +763,22 @@ Ví dụ: [`examples/SlashCommand.js`](../examples/SlashCommand.js)
 
 Nguồn: [`src/client/voice/`](../src/client/voice) · Trạng thái: **ported**
 
-> **Voice đã nói được DAVE, nhưng vẫn chưa kết nối được.** Từ tháng 3/2026 Discord
-> bắt buộc mã hoá đầu cuối cho mọi voice call không phải stage, và trước đây trả lời
-> IDENTIFY bằng `4017 E2EE/DAVE protocol required` — thử cả version 8, 7, 6, 5, 4
-> đều như nhau. Chỗ đó đã sửa: stack bọc `@snazzah/davey`, đúng binding MLS native
-> mà `@discordjs/voice` dùng, nói được frame nhị phân của DAVE, chạy đủ bắt tay
-> epoch và transition, và mã hoá đầu cuối audio **bên trong** lớp mã hoá transport
-> sẵn có.
+> **Voice chạy được.** Cả năm check smoke đều pass với kênh thật: vào kênh, phát,
+> mở stream nhận, mở kết nối Go Live, rời kênh.
 >
-> Thứ còn lại là `4006 Session is no longer valid`, và nó không phải lỗi của lib.
-> Mọi field trong IDENTIFY đã đo với gateway thật: `server_id`, `channel_id`,
-> `user_id`, `token` lấy từ `VOICE_SERVER_UPDATE` của chính lần chạy đó, và
-> `session_id` khớp từng ký tự với `sessionInfo.sessionId` của shard. Cùng một mã
-> 4006 không có trong tài liệu này cũng được báo ở nơi khác với tài khoản người
-> dùng. Ép `rtcRegion` sang Singapore, Nhật, us-east, Rotterdam đều không cứu được:
-> 4006 bám theo từng máy chủ voice chứ không theo region. Đúng một máy chủ trong
-> hơn chục lần thử đã nhận IDENTIFY và chạy được bắt tay MLS — nhờ đó mới biết stack
-> thật sự chạy. Trúng máy chủ nào là hên xui, nên phần lớn lần vào kênh vẫn không có
-> gói audio nào đi qua.
+> Để tới đây phải sửa hai chỗ. Từ tháng 3/2026 Discord bắt buộc mã hoá đầu cuối cho
+> mọi voice call không phải stage, và trả lời IDENTIFY bằng
+> `4017 E2EE/DAVE protocol required`; stack giờ bọc `@snazzah/davey`, đúng binding
+> MLS native mà `@discordjs/voice` dùng, nói được frame nhị phân của DAVE, chạy đủ
+> bắt tay epoch và transition, và mã hoá đầu cuối audio **bên trong** lớp mã hoá
+> transport sẵn có. Sau đó tới `4006 Session is no longer valid`, và cái này là lỗi
+> của lib: chỗ parse endpoint cắt mất cổng, nên
+> `c-hkg12-….discord.media:8443` Discord trả về biến thành kết nối vào cổng 443 của
+> một tiến trình voice khác, tiến trình chưa từng nghe tới session của ta.
+>
+> Ở một mình trong kênh thì nhóm DAVE không bao giờ tới epoch, nên `session.ready`
+> vẫn là `false` và audio chỉ đi dưới lớp mã hoá transport — không có ai khác trong
+> nhóm để mã hoá cho.
 >
 > **`@snazzah/davey` là `optionalDependency` và thiếu nó thì voice không chạy.**
 > `npm i @snazzah/davey`. Thiếu, `joinChannel` ném ra một câu nói rõ tên gói chứ

@@ -7,6 +7,11 @@ import { readFileSync, writeFileSync } from 'node:fs';
 const HEADING = '## Results';
 const TABLE_HEADER = ['| Date | Suite | Check | Result |', '| ---- | ----- | ----- | ------ |'];
 
+// Mot dong ket qua that luon bat dau bang dau thoi gian. Bang tally o ngay tren
+// cung co 4 o, nen khong loc thi lan chay sau nuot lai chinh no: `| write | 15 | 0 |
+// 5 |` bien thanh suite ten "15", va rac nhan len sau moi lan chay.
+const STAMP = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
+
 // Tach mot dong bang markdown thanh cac o, bo o rong o hai dau.
 function splitRow(line) {
   return line
@@ -35,7 +40,7 @@ export function appendResults(file, suite, results) {
   for (const line of content.slice(headingAt).split('\n')) {
     if (!line.startsWith('|')) continue;
     const cells = splitRow(line);
-    if (cells.length !== 4 || cells[0] === 'Date' || cells[0].startsWith('--')) continue;
+    if (cells.length !== 4 || !STAMP.test(cells[0])) continue;
     rows.set(`${cells[1]}|${cells[2]}`, cells);
   }
 

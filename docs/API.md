@@ -771,24 +771,22 @@ Example: [`examples/SlashCommand.js`](../examples/SlashCommand.js)
 
 Source: [`src/client/voice/`](../src/client/voice) · Status: **ported**
 
-> **Voice speaks DAVE now, but still does not connect.** Discord has required
-> end-to-end encryption on every non-stage voice call since March 2026, and used to
-> answer the IDENTIFY with `4017 E2EE/DAVE protocol required` on gateway versions 8,
-> 7, 6, 5 and 4 alike. That is fixed: the stack wraps `@snazzah/davey` — the same
+> **Voice works.** All five smoke checks pass against a real channel: join, play,
+> open a receive stream, open a Go Live connection, leave.
+>
+> Getting there took two fixes. Discord has required end-to-end encryption on every
+> non-stage voice call since March 2026 and answered the IDENTIFY with
+> `4017 E2EE/DAVE protocol required`; the stack now wraps `@snazzah/davey` — the same
 > native MLS binding `@discordjs/voice` uses — speaks DAVE's binary frames, runs the
 > epoch and transition handshake, and encrypts audio end to end inside the existing
-> transport encryption.
+> transport encryption. Then came `4006 Session is no longer valid`, which turned out
+> to be ours: the endpoint parser threw away the port, so a
+> `c-hkg12-….discord.media:8443` from Discord became a connection to port 443 of a
+> different voice process that had never heard of our session.
 >
-> What remains is `4006 Session is no longer valid`, and it is not the library's.
-> Every IDENTIFY field was verified against a live gateway: `server_id`,
-> `channel_id`, `user_id`, a `token` from the same run's `VOICE_SERVER_UPDATE`, and a
-> `session_id` matching the shard's own `sessionInfo.sessionId` byte for byte. The
-> same undocumented 4006 is reported against user accounts elsewhere. Forcing
-> `rtcRegion` to Singapore, Japan, us-east and Rotterdam does not help: 4006 follows
-> the individual voice server, not the region. Exactly one server out of a dozen
-> tried accepted the IDENTIFY and ran the MLS handshake, which is how we know the
-> stack works at all. Which server you are handed is luck, so most joins still move
-> no audio.
+> Alone in a channel the DAVE group never reaches an epoch, so `session.ready` stays
+> `false` and audio travels under transport encryption only — there is nobody else in
+> the group to encrypt for.
 >
 > **`@snazzah/davey` is an `optionalDependency` and voice cannot work without it.**
 > `npm i @snazzah/davey`. Missing it, `joinChannel` throws a sentence naming the
