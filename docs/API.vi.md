@@ -18,11 +18,16 @@ sự thật. Các file chứa chúng nằm trong bảng lệch của
 | unit       | Có test offline trong [`test/`](../test); chưa bao giờ chạy với Discord thật                      |
 | ported     | Chép từ `discord.js-selfbot-v13`, chưa chạy lần nào. Route và hằng số có thể đã cũ                |
 
-Chỉ phần đăng nhập và phía **đọc** là `tested`: relationships, settings,
-sessions, notes, fetch profile, thanh toán, lời mời kết bạn, application đã cấp
-quyền và route tìm application command. Mọi thao tác **ghi** — đổi tài khoản,
-vào guild, gửi interaction, mở kết nối voice — đều là `unit` hoặc `ported`, nên
-coi như có thể hỏng với Discord hiện tại.
+`tested` gồm đăng nhập, toàn bộ phía đọc (relationships, settings, sessions,
+notes, fetch profile, thanh toán, lời mời kết bạn, application đã cấp quyền,
+route tìm application command) và những thao tác ghi trả lại được ngay trong cùng
+phiên: setting tài khoản và setting theo guild, custom status, note, nickname bạn
+bè, lời mời kết bạn và ba builder presence.
+
+Vẫn là `unit` hoặc `ported`, nên coi như có thể hỏng với Discord hiện tại: mọi thứ
+vào guild, gửi interaction, mở kết nối voice, hoặc mất tiền. Bốn hàm sửa hồ sơ
+(`setAboutMe`, `setPronouns`, `setGlobalName`, `setAccentColor`) cũng chưa test
+được, vì một lý do khác — xem [mục 8](#8-tài-khoản-và-hồ-sơ).
 
 ## Mục lục
 
@@ -147,7 +152,7 @@ Ví dụ: [`examples/QRLogin.js`](../examples/QRLogin.js),
 ## 3. Quan hệ bạn bè
 
 Nguồn: [`src/managers/RelationshipManager.js`](../src/managers/RelationshipManager.js)
-· Trạng thái: **tested** (phía đọc)
+· Trạng thái: **tested** (phía đọc, thêm `setNickname` đã ghi rồi trả lại)
 
 ```ts
 client.relationships: RelationshipManager;
@@ -231,7 +236,7 @@ thật là `approx_last_used_time`, không phải thời điểm tạo.
 ## 5. Ghi chú
 
 Nguồn: [`src/managers/UserNoteManager.js`](../src/managers/UserNoteManager.js)
-· Trạng thái: **tested** (phía đọc)
+· Trạng thái: **tested** (phía đọc, thêm `updateNote` đã ghi rồi trả lại)
 
 ```ts
 client.notes: UserNoteManager;
@@ -256,7 +261,8 @@ await client.notes.updateNote('123456789', null); // xoá
 
 Nguồn: [`src/managers/ClientUserSettingManager.js`](../src/managers/ClientUserSettingManager.js),
 [`src/managers/GuildSettingManager.js`](../src/managers/GuildSettingManager.js)
-· Trạng thái: **tested** (phía đọc)
+· Trạng thái: **tested** (phía đọc, thêm `setTheme`, `toggleCompactMode` và
+`setCustomStatus` đã ghi rồi trả lại trên tài khoản thật)
 
 ### Cài đặt tài khoản
 
@@ -369,7 +375,12 @@ await free?.subscribe('123456789');
 
 Nguồn: [`src/structures/ClientUserActions.js`](../src/structures/ClientUserActions.js),
 [`src/client/ClientActions.js`](../src/client/ClientActions.js) · Trạng thái:
-**unit**, trừ `fetchFriendInvites()` và `authorizedApplications()` là **tested**
+**unit**, trừ bộ ba lời mời kết bạn và `authorizedApplications()` là **tested**
+
+> Bốn hàm sửa hồ sơ **chưa test được trên tài khoản thật**. `PATCH /users/@me` trả
+> về thử thách hCaptcha, nên không ghi được gì trừ khi client có
+> [`captchaSolver`](#1-tuỳ-chọn-client). Thư viện xử lý đúng — nó ném `400` ra
+> ngoài chứ không giả vờ là đã sửa xong — nhưng tài khoản thì không đổi.
 
 > `fetchBurstCredit()` đã bị **xoá**. `GET /users/@me/burst-credits` trả `404 code 0`
 > trơn trên cả API v9 lẫn v10 — route không còn, không phải vấn đề quyền hay Nitro
@@ -502,7 +513,9 @@ Ví dụ: [`examples/GroupDM.js`](../examples/GroupDM.js)
 
 Nguồn: [`src/structures/RichPresence.js`](../src/structures/RichPresence.js),
 [`src/structures/ClientPresence.js`](../src/structures/ClientPresence.js) ·
-Trạng thái: **unit**
+Trạng thái: **tested** — cả ba builder đã phát trên phiên thật mà gateway không
+ngắt. Presence không có ack, nên hiển thị thực tế trên máy người khác vẫn chưa
+chứng minh được
 
 Cả ba builder giờ là object thuần — không còn nhận `client` như v13. Chúng dùng
 chung một lớp cơ sở:

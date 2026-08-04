@@ -56,6 +56,28 @@ function rewriteAuthorization(headers, token) {
 }
 
 /**
+ * Ép `User-Agent` về đúng một dòng, mang giá trị của browser.
+ *
+ * `@discordjs/rest` tự thêm `User-Agent: DiscordBot (...)` của nó **sau** các
+ * header truyền vào. Key viết hoa khác key `user-agent` viết thường của
+ * {@link buildSelfbotHeaders}, nên object giữ cả hai và undici gửi đi hai dòng —
+ * Discord lấy dòng sau, thành ra mọi request đều lộ ra là bot. Có endpoint chỉ
+ * dành cho client thật sẽ im lặng trả `204` rỗng thay vì làm việc, ví dụ
+ * `POST /users/@me/invites`.
+ * @param {Object} headers Header của request
+ * @param {string} userAgent User agent của browser
+ * @returns {Object} chính object headers đã sửa
+ */
+function rewriteUserAgent(headers, userAgent) {
+  for (const key of Object.keys(headers)) {
+    if (key.toLowerCase() === 'user-agent') delete headers[key];
+  }
+
+  headers['user-agent'] = userAgent;
+  return headers;
+}
+
+/**
  * `@discordjs/ws` gọi `GET /gateway/bot` để lấy gateway URL và session limit.
  * User token bị 401 ở route đó, nên trả response tự dựng thay vì gọi mạng.
  * Shape phải khớp `RESTGetAPIGatewayBotResult`.
@@ -154,17 +176,20 @@ function parseCaptchaError(text) {
  */
 function createSelfbotREST(clientOptions) {
   const dispatcher = buildDispatcher(clientOptions);
+  const headers = buildSelfbotHeaders(clientOptions);
+  const userAgent = headers['user-agent'];
   // Token phải lấy tại thời điểm request, không phải lúc tạo REST.
   let token = null;
 
   const rest = new REST({
     ...clientOptions.rest,
-    headers: buildSelfbotHeaders(clientOptions),
+    headers,
     makeRequest: async (url, init) => {
       if (new URL(url).pathname.endsWith('/gateway/bot')) {
         return makeGatewayBotResponse();
       }
       if (token) rewriteAuthorization(init.headers, token);
+      rewriteUserAgent(init.headers, userAgent);
 
       const send = requestInit => DefaultRestOptions.makeRequest(url, { ...requestInit, dispatcher });
 
@@ -214,6 +239,7 @@ module.exports = {
   parseCaptchaError,
   buildSelfbotHeaders,
   rewriteAuthorization,
+  rewriteUserAgent,
   buildDispatcher,
   makeGatewayBotResponse,
 };

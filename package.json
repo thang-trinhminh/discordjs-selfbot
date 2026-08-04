@@ -12,7 +12,8 @@
     "test:typescript": "tsc --noEmit && tsd --files typings/index.test-d.ts && tsd --files typings/selfbot.test-d.ts",
     "smoke:login": "node scripts/smoke/login.mjs",
     "smoke:readonly": "node --env-file=.env scripts/smoke/readonly.mjs",
-    "prepare": "husky"
+    "prepare": "husky",
+    "smoke:write": "node --env-file=.env scripts/smoke/write.mjs"
   },
   "files": [
     "src",

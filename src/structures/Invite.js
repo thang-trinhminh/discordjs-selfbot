@@ -180,11 +180,15 @@ class Invite extends Base {
        * The channel this invite is for
        * @type {?BaseChannel}
        */
-      this.channel =
-        this.client.channels._add(data.channel, this.guild, { cache: false }) ??
-        this.client.channels.resolve(this.channelId);
+      // Lời mời kết bạn (`POST /users/@me/invites`) trả về `channel: null` vì nó
+      // không trỏ tới kênh nào. Upstream chỉ gặp invite của guild nên đọc thẳng
+      // `data.channel.id` và ném TypeError ở đây.
+      this.channel = data.channel
+        ? (this.client.channels._add(data.channel, this.guild, { cache: false }) ??
+          this.client.channels.resolve(this.channelId))
+        : (this.client.channels.resolve(this.channelId) ?? null);
 
-      this.channelId ??= data.channel.id;
+      this.channelId ??= data.channel?.id ?? null;
     }
 
     if ('created_at' in data) {

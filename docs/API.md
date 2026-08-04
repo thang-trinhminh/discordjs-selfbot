@@ -19,11 +19,17 @@ files they live in are the ones listed in the divergence table of
 | unit   | Covered by offline tests in [`test/`](../test); never run against Discord                             |
 | ported | Copied from `discord.js-selfbot-v13` and never run at all. Routes and constants may be stale          |
 
-Only login and the **read** side is `tested`: relationships, settings, sessions,
-notes, profile fetching, billing, friend invites, authorized applications and the
-application-command search route. Every **write** — anything that changes the
-account, joins a guild, sends an interaction, or opens a voice connection — is
-`unit` or `ported`. Assume it can fail against today's Discord.
+`tested` covers login, the whole read side (relationships, settings, sessions,
+notes, profile fetching, billing, friend invites, authorized applications, the
+application-command search route) and the writes that can be undone in the same
+session: account and per-guild settings, custom status, notes, friend nicknames,
+friend invites and the three presence builders.
+
+Still `unit` or `ported`, so assume they can fail against today's Discord:
+everything that joins a guild, sends an interaction, opens a voice connection, or
+costs money. Profile edits (`setAboutMe`, `setPronouns`, `setGlobalName`,
+`setAccentColor`) are also untested for a different reason — see
+[section 8](#8-account-and-profile).
 
 ## Contents
 
@@ -148,7 +154,7 @@ Examples: [`examples/QRLogin.js`](../examples/QRLogin.js),
 ## 3. Relationships
 
 Source: [`src/managers/RelationshipManager.js`](../src/managers/RelationshipManager.js)
-· Status: **tested** (read side)
+· Status: **tested** (read side, plus `setNickname` written and restored)
 
 ```ts
 client.relationships: RelationshipManager;
@@ -233,7 +239,7 @@ underlying value is `approx_last_used_time`, not a creation time.
 ## 5. Notes
 
 Source: [`src/managers/UserNoteManager.js`](../src/managers/UserNoteManager.js)
-· Status: **tested** (read side)
+· Status: **tested** (read side, plus `updateNote` written and restored)
 
 ```ts
 client.notes: UserNoteManager;
@@ -258,7 +264,8 @@ await client.notes.updateNote('123456789', null); // delete
 
 Source: [`src/managers/ClientUserSettingManager.js`](../src/managers/ClientUserSettingManager.js),
 [`src/managers/GuildSettingManager.js`](../src/managers/GuildSettingManager.js)
-· Status: **tested** (read side)
+· Status: **tested** (read side, plus `setTheme`, `toggleCompactMode` and
+`setCustomStatus` written and restored against a real account)
 
 ### Account settings
 
@@ -372,7 +379,13 @@ Nitro codes are redeemed through `client.redeemNitro()` — see
 
 Source: [`src/structures/ClientUserActions.js`](../src/structures/ClientUserActions.js),
 [`src/client/ClientActions.js`](../src/client/ClientActions.js) · Status: **unit**,
-except `fetchFriendInvites()` and `authorizedApplications()` which are **tested**
+except the friend-invite trio and `authorizedApplications()`, which are **tested**
+
+> The four profile setters are **untested against a real account**.
+> `PATCH /users/@me` answers with an hCaptcha challenge, so nothing lands unless
+> the client is built with a [`captchaSolver`](#1-client-options). The library is
+> behaving correctly here — it surfaces the `400` rather than pretending the edit
+> worked — but the account is left unchanged.
 
 > `fetchBurstCredit()` was **removed**. `GET /users/@me/burst-credits` answers a
 > bare `404 code 0` on both API v9 and v10 — route gone, not a permission or Nitro
@@ -505,7 +518,9 @@ Example: [`examples/GroupDM.js`](../examples/GroupDM.js)
 
 Source: [`src/structures/RichPresence.js`](../src/structures/RichPresence.js),
 [`src/structures/ClientPresence.js`](../src/structures/ClientPresence.js) ·
-Status: **unit**
+Status: **tested** — all three builders were broadcast on a real session without
+the gateway dropping it. Presence has no acknowledgement, so what actually renders
+on someone else's client is still unproven
 
 All three builders are plain objects — they no longer take a `client`, unlike
 v13. They share a base:

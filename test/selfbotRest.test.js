@@ -3,7 +3,7 @@
 const assert = require('node:assert');
 const { Buffer } = require('node:buffer');
 const { test } = require('node:test');
-const { buildSelfbotHeaders, rewriteAuthorization } = require('../src/rest/SelfbotREST.js');
+const { buildSelfbotHeaders, rewriteAuthorization, rewriteUserAgent } = require('../src/rest/SelfbotREST.js');
 const { DefaultUserAgent, DefaultSuperProperties } = require('../src/util/SelfbotDefaults.js');
 
 const options = {
@@ -67,6 +67,25 @@ test('rewriteAuthorization bo prefix Bearer va giu header khac', () => {
 test('rewriteAuthorization khong doi gi khi token da tran', () => {
   const out = rewriteAuthorization({ authorization: 'abc' }, 'abc');
   assert.strictEqual(out.authorization, 'abc');
+});
+
+test('chi con mot user-agent, va la cua browser', () => {
+  // @discordjs/rest them 'User-Agent' viet hoa cua no sau header cua minh.
+  // Con ca hai thi undici gui hai dong, Discord lay dong sau va thay bot.
+  const headers = rewriteUserAgent(
+    { 'user-agent': DefaultUserAgent, 'User-Agent': 'DiscordBot (https://discord.js.org, 2.6.3)' },
+    DefaultUserAgent,
+  );
+
+  const names = Object.keys(headers).filter(key => key.toLowerCase() === 'user-agent');
+  assert.deepStrictEqual(names, ['user-agent']);
+  assert.strictEqual(headers['user-agent'], DefaultUserAgent);
+});
+
+test('rewriteUserAgent dat user-agent ca khi request chua co', () => {
+  const headers = rewriteUserAgent({ 'x-keep': '1' }, DefaultUserAgent);
+  assert.strictEqual(headers['user-agent'], DefaultUserAgent);
+  assert.strictEqual(headers['x-keep'], '1');
 });
 
 test('BaseClient dung shim, khong dung REST thuan', () => {

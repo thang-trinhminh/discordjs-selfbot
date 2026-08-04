@@ -2,11 +2,11 @@
 // de chi ton dung 1 identify.
 // Chay: node --env-file=.env scripts/smoke/readonly.mjs
 // Khong chay trong CI.
-import { appendFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import process from 'node:process';
 import { setTimeout, clearTimeout } from 'node:timers';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { appendResults } from './log.mjs';
 
 const require = createRequire(import.meta.url);
 const { Client } = require('../../src/index.js');
@@ -159,16 +159,7 @@ client.once('ready', async () => {
   console.log(`tong: ${passed}/${results.length} pass`);
 
   // File: mot dong moi check, chi ngay va pass/fail. Khong ghi gia tri tra ve.
-  const stamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
-  const block = [
-    '',
-    `### ${stamp} UTC — readonly ${passed}/${results.length}`,
-    '',
-    '| Check | Result |',
-    '| ----- | ------ |',
-    ...results.map(result => `| ${result.name} | ${result.status} |`),
-  ].join('\n');
-  appendFileSync(LOG_FILE, `${block}\n`);
+  appendResults(LOG_FILE, 'readonly', results);
   console.log(`Da ghi ket qua vao ${LOG_FILE.pathname}`);
 
   client.destroy();
