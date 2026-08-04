@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('node:assert');
+const { Buffer } = require('node:buffer');
 const EventEmitter = require('node:events');
 const { test } = require('node:test');
 const { setTimeout: sleep } = require('node:timers/promises');
@@ -259,4 +260,35 @@ test('opcode DAVE khop voi discord-api-types', () => {
   assert.strictEqual(VoiceOpcodes.DAVE_MLS_ANNOUNCE_COMMIT_TRANSITION, ApiVoiceOpcodes.DaveMlsAnnounceCommitTransition);
   assert.strictEqual(VoiceOpcodes.DAVE_MLS_WELCOME, ApiVoiceOpcodes.DaveMlsWelcome);
   assert.strictEqual(VoiceOpcodes.DAVE_MLS_INVALID_COMMIT_WELCOME, ApiVoiceOpcodes.DaveMlsInvalidCommitWelcome);
+});
+
+test('shim doc duoc frame nhi phan cua DAVE', () => {
+  const WebSocketShim = require('../src/client/voice/util/VoiceWebSocketShim.js');
+
+  // Seq uint16BE, op uint8, roi payload.
+  const frame = Buffer.concat([Buffer.from([0x00, 0x2a, 25]), Buffer.from('mls', 'utf8')]);
+  const { op, seq, payload } = WebSocketShim.unpack(frame);
+
+  assert.strictEqual(seq, 42);
+  assert.strictEqual(op, 25);
+  assert.strictEqual(payload.toString('utf8'), 'mls');
+});
+
+test('shim van doc JSON dang chuoi nhu cu', () => {
+  const WebSocketShim = require('../src/client/voice/util/VoiceWebSocketShim.js');
+
+  assert.deepStrictEqual(WebSocketShim.unpack('{"op":8,"d":{"heartbeat_interval":41250}}'), {
+    op: 8,
+    d: { heartbeat_interval: 41250 },
+  });
+});
+
+test('packBinary gan opcode mot byte, khong gan seq', () => {
+  const WebSocketShim = require('../src/client/voice/util/VoiceWebSocketShim.js');
+
+  const packed = WebSocketShim.packBinary(26, Buffer.from('key', 'utf8'));
+
+  assert.strictEqual(packed.length, 4);
+  assert.strictEqual(packed.readUInt8(0), 26);
+  assert.strictEqual(packed.subarray(1).toString('utf8'), 'key');
 });
