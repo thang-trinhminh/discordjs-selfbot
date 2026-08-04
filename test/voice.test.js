@@ -586,3 +586,166 @@ test('sendBinary gui opcode mot byte roi payload', async () => {
   assert.strictEqual(sent[0].readUInt8(0), VoiceOpcodes.DAVE_MLS_KEY_PACKAGE);
   assert.strictEqual(sent[0].subarray(1).toString('utf8'), 'kp');
 });
+
+// VoiceConnection chạm vào client, channel và player. Ở đây chỉ cần phần trạng thái,
+// nên dựng object có prototype của nó rồi gọi thẳng vào hàm cần kiểm.
+function makeVoiceConnection() {
+  const VoiceConnection = require('../src/client/voice/VoiceConnection.js');
+  const sentBinary = [];
+  const sentPackets = [];
+
+  const connection = Object.create(VoiceConnection.prototype);
+  EventEmitter.call(connection);
+  connection.dave = null;
+  connection.channel = { id: '444' };
+  // `client` la getter doc qua voiceManager, khong gan thang duoc.
+  connection.voiceManager = { client: { user: { id: '111' } } };
+  connection.sockets = {
+    ws: {
+      connectedClients: new Set(['111', '333']),
+      sendBinary: (op, payload) => {
+        sentBinary.push({ op, payload });
+        return Promise.resolve();
+      },
+      sendPacket: packet => {
+        sentPackets.push(packet);
+        return Promise.resolve();
+      },
+    },
+  };
+
+  return { connection, sentBinary, sentPackets };
+}
+
+test('identifyExtras rong o voice thuong, co payload Go Live o StreamConnection', () => {
+  const VoiceConnection = require('../src/client/voice/VoiceConnection.js');
+  const { StreamConnection } = VoiceConnection;
+
+  assert.deepStrictEqual(Object.create(VoiceConnection.prototype).identifyExtras, {});
+
+  const extras = Object.create(StreamConnection.prototype).identifyExtras;
+  assert.strictEqual(extras.video, true);
+  assert.strictEqual(extras.streams[0].type, 'screen');
+  assert.strictEqual(extras.streams[0].rid, '100');
+  assert.strictEqual(extras.streams[0].quality, 100);
+});
+
+test('createDaveSession bo qua khi server khai phien ban 0', () => {
+  const { connection } = makeVoiceConnection();
+  assert.strictEqual(connection.createDaveSession(0), null);
+});
+
+test('createDaveSession tao session voi user va channel hien tai', () => {
+  const { connection } = makeVoiceConnection();
+  const dave = connection.createDaveSession(1);
+
+  assert.strictEqual(dave.protocolVersion, 1);
+  assert.strictEqual(dave.userId, '111');
+  assert.strictEqual(dave.channelId, '444');
+});
+
+test('key package cua session duoc gui bang opcode 26', () => {
+  const { connection, sentBinary } = makeVoiceConnection();
+  const dave = connection.createDaveSession(1);
+
+  dave.emit('keyPackage', Buffer.from('kp'));
+
+  assert.strictEqual(sentBinary[0].op, VoiceOpcodes.DAVE_MLS_KEY_PACKAGE);
+  assert.strictEqual(sentBinary[0].payload.toString('utf8'), 'kp');
+});
+
+test('transition hong duoc bao lai bang opcode 31', () => {
+  const { connection, sentPackets } = makeVoiceConnection();
+  const dave = connection.createDaveSession(1);
+
+  dave.emit('invalidateTransition', 4);
+
+  assert.deepStrictEqual(sentPackets[0], {
+    op: VoiceOpcodes.DAVE_MLS_INVALID_COMMIT_WELCOME,
+    d: { transition_id: 4 },
+  });
+});
+
+test('opcode 21 voi transition khac 0 thi tra loi bang opcode 23', () => {
+  const { connection, sentPackets } = makeVoiceConnection();
+  connection.dave = connection.createDaveSession(1);
+  connection.dave.createSession = () => makeDaveStub();
+  connection.dave.reinit();
+
+  connection.onDaveMessage({
+    op: VoiceOpcodes.DAVE_PREPARE_TRANSITION,
+    d: { transition_id: 6, protocol_version: 1 },
+  });
+
+  assert.deepStrictEqual(sentPackets.at(-1), {
+    op: VoiceOpcodes.DAVE_TRANSITION_READY,
+    d: { transition_id: 6 },
+  });
+});
+
+test('opcode 21 voi transition 0 thi khong tra loi', () => {
+  const { connection, sentPackets } = makeVoiceConnection();
+  connection.dave = connection.createDaveSession(1);
+  connection.dave.createSession = () => makeDaveStub();
+  connection.dave.reinit();
+
+  connection.onDaveMessage({
+    op: VoiceOpcodes.DAVE_PREPARE_TRANSITION,
+    d: { transition_id: 0, protocol_version: 1 },
+  });
+
+  assert.deepStrictEqual(sentPackets, []);
+});
+
+test('opcode 27 gui commit va welcome lai bang opcode 28', () => {
+  const { connection, sentBinary } = makeVoiceConnection();
+  connection.dave = connection.createDaveSession(1);
+  connection.dave.createSession = () => makeDaveStub();
+  connection.dave.reinit();
+  sentBinary.length = 0;
+
+  connection.onDaveBinary({
+    op: VoiceOpcodes.DAVE_MLS_PROPOSALS,
+    payload: Buffer.concat([Buffer.from([0]), Buffer.from('proposals')]),
+  });
+
+  assert.strictEqual(sentBinary[0].op, VoiceOpcodes.DAVE_MLS_COMMIT_WELCOME);
+  assert.strictEqual(sentBinary[0].payload.toString('utf8'), 'commitwelcome');
+});
+
+test('opcode 25 nap external sender vao session', () => {
+  const { connection } = makeVoiceConnection();
+  connection.dave = connection.createDaveSession(1);
+  const stub = makeDaveStub();
+  connection.dave.createSession = () => stub;
+  connection.dave.reinit();
+
+  connection.onDaveBinary({ op: VoiceOpcodes.DAVE_MLS_EXTERNAL_SENDER, payload: Buffer.from('sender') });
+
+  assert.deepStrictEqual(stub.calls.at(-1), ['setExternalSender', 'sender']);
+});
+
+test('opcode 29 xu ly xong thi bao san sang bang opcode 23', () => {
+  const { connection, sentPackets } = makeVoiceConnection();
+  connection.dave = connection.createDaveSession(1);
+  connection.dave.createSession = () => makeDaveStub();
+  connection.dave.reinit();
+
+  connection.onDaveBinary({
+    op: VoiceOpcodes.DAVE_MLS_ANNOUNCE_COMMIT_TRANSITION,
+    payload: Buffer.concat([Buffer.from([0x00, 0x08]), Buffer.from('commit')]),
+  });
+
+  assert.deepStrictEqual(sentPackets.at(-1), {
+    op: VoiceOpcodes.DAVE_TRANSITION_READY,
+    d: { transition_id: 8 },
+  });
+});
+
+test('DAVE binary bi bo qua khi chua co session', () => {
+  const { connection, sentBinary } = makeVoiceConnection();
+
+  connection.onDaveBinary({ op: VoiceOpcodes.DAVE_MLS_EXTERNAL_SENDER, payload: Buffer.from('sender') });
+
+  assert.deepStrictEqual(sentBinary, []);
+});

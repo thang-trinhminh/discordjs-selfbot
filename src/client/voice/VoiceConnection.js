@@ -5,6 +5,7 @@ const { getCiphers } = require('node:crypto');
 const { setTimeout } = require('node:timers');
 const { Collection } = require('@discordjs/collection');
 const { ChannelType } = require('discord-api-types/v10');
+const { DAVESession } = require('./networking/DAVESession');
 const VoiceUDP = require('./networking/VoiceUDPClient');
 const VoiceWebSocket = require('./networking/VoiceWebSocket');
 const MediaPlayer = require('./player/MediaPlayer');
@@ -119,6 +120,12 @@ class VoiceConnection extends EventEmitter {
      * @private
      */
     this.ssrcMap = new Map();
+
+    /**
+     * Phiên DAVE của kết nối này, `null` khi voice server khai phiên bản 0.
+     * @type {?DAVESession}
+     */
+    this.dave = null;
 
     /**
      * Tracks which users are talking
@@ -505,11 +512,16 @@ class VoiceConnection extends EventEmitter {
 
     this.emit('debug', 'Connection clean up');
 
+    this.dave?.destroy();
+    this.dave = null;
+
     if (ws) {
       ws.removeAllListeners('error');
       ws.removeAllListeners('ready');
       ws.removeAllListeners('sessionDescription');
       ws.removeAllListeners('speaking');
+      ws.removeAllListeners('daveMessage');
+      ws.removeAllListeners('daveBinary');
       ws.shutdown();
     }
 
@@ -546,6 +558,8 @@ class VoiceConnection extends EventEmitter {
     ws.on('sessionDescription', this.onSessionDescription.bind(this));
     ws.on('startSpeaking', this.onStartSpeaking.bind(this));
     ws.on('startStreaming', this.onStartStreaming.bind(this));
+    ws.on('daveMessage', this.onDaveMessage.bind(this));
+    ws.on('daveBinary', this.onDaveBinary.bind(this));
 
     this.sockets.ws.connect();
   }
@@ -574,6 +588,12 @@ class VoiceConnection extends EventEmitter {
    */
   onSessionDescription(data) {
     Object.assign(this.authentication, data);
+
+    // Voice server khai phiên bản DAVE ở đây, cạnh `mode` và `secret_key` — không
+    // phải ở READY.
+    this.dave?.destroy();
+    this.dave = this.createDaveSession(data.dave_protocol_version);
+
     this.status = VoiceStatus.CONNECTED;
     const ready = () => {
       clearTimeout(this.connectTimeout);
@@ -592,6 +612,95 @@ class VoiceConnection extends EventEmitter {
       const dispatcher = this.playAudio(new SingleSilence(), { type: 'opus', volume: false });
       dispatcher.once('finish', ready);
     }
+  }
+
+  /**
+   * Field riêng nhét thêm vào IDENTIFY.
+   *
+   * Voice thường không có gì. `StreamConnection` mới cần `streams` và `video`, và
+   * bản port cũ gửi chúng trong mọi IDENTIFY — Discord không hề đòi thứ đó cho một
+   * kết nối voice bình thường.
+   * @type {Object}
+   * @readonly
+   * @private
+   */
+  get identifyExtras() {
+    return {};
+  }
+
+  /**
+   * Tạo phiên DAVE theo phiên bản voice server khai trong SESSION_DESCRIPTION.
+   * @param {number} protocolVersion Phiên bản giao thức
+   * @returns {?DAVESession}
+   * @private
+   */
+  createDaveSession(protocolVersion) {
+    if (!protocolVersion) return null;
+
+    const dave = new DAVESession(protocolVersion, this.client.user.id, this.channel.id);
+    dave.on('debug', message => this.emit('debug', `[DAVE] ${message}`));
+    dave.on('error', error => this.emit('error', error));
+    dave.on('keyPackage', keyPackage =>
+      this.sockets.ws?.sendBinary(VoiceOpcodes.DAVE_MLS_KEY_PACKAGE, keyPackage).catch(() => null),
+    );
+    dave.on('invalidateTransition', transitionId =>
+      this.sockets.ws
+        ?.sendPacket({
+          op: VoiceOpcodes.DAVE_MLS_INVALID_COMMIT_WELCOME,
+          d: { transition_id: transitionId },
+        })
+        .catch(() => null),
+    );
+    return dave;
+  }
+
+  /**
+   * Xử lý opcode DAVE dạng JSON.
+   * @param {Object} packet Gói nhận được
+   * @private
+   */
+  onDaveMessage(packet) {
+    if (!this.dave) return;
+
+    if (packet.op === VoiceOpcodes.DAVE_PREPARE_TRANSITION) {
+      if (this.dave.prepareTransition(packet.d)) this._sendTransitionReady(packet.d.transition_id);
+    } else if (packet.op === VoiceOpcodes.DAVE_EXECUTE_TRANSITION) {
+      this.dave.executeTransition(packet.d.transition_id);
+    } else if (packet.op === VoiceOpcodes.DAVE_PREPARE_EPOCH) {
+      this.dave.prepareEpoch(packet.d);
+    }
+  }
+
+  /**
+   * Xử lý frame DAVE dạng nhị phân.
+   * @param {Object} frame Frame nhận được
+   * @private
+   */
+  onDaveBinary({ op, payload }) {
+    if (!this.dave) return;
+
+    if (op === VoiceOpcodes.DAVE_MLS_EXTERNAL_SENDER) {
+      this.dave.setExternalSender(payload);
+    } else if (op === VoiceOpcodes.DAVE_MLS_PROPOSALS) {
+      const response = this.dave.processProposals(payload, this.sockets.ws.connectedClients);
+      if (response) this.sockets.ws.sendBinary(VoiceOpcodes.DAVE_MLS_COMMIT_WELCOME, response).catch(() => null);
+    } else if (op === VoiceOpcodes.DAVE_MLS_ANNOUNCE_COMMIT_TRANSITION) {
+      const { transitionId, success } = this.dave.processCommit(payload);
+      if (success && transitionId !== 0) this._sendTransitionReady(transitionId);
+    } else if (op === VoiceOpcodes.DAVE_MLS_WELCOME) {
+      const { transitionId, success } = this.dave.processWelcome(payload);
+      if (success && transitionId !== 0) this._sendTransitionReady(transitionId);
+    }
+  }
+
+  /**
+   * @param {number} transitionId Transition đã sẵn sàng
+   * @private
+   */
+  _sendTransitionReady(transitionId) {
+    this.sockets.ws
+      ?.sendPacket({ op: VoiceOpcodes.DAVE_TRANSITION_READY, d: { transition_id: transitionId } })
+      .catch(() => null);
   }
 
   onStartSpeaking({ user_id, ssrc, speaking }) {
@@ -968,6 +1077,19 @@ class StreamConnection extends VoiceConnection {
     throw new Error('STREAM_CANNOT_JOIN');
   }
 
+  /**
+   * Go Live khai luồng ngay trong IDENTIFY. Đây là nơi duy nhất payload đó thuộc về.
+   * @type {Object}
+   * @readonly
+   * @private
+   */
+  get identifyExtras() {
+    return {
+      streams: [{ type: 'screen', rid: '100', quality: 100 }],
+      video: true,
+    };
+  }
+
   get streamConnection() {
     return this;
   }
@@ -1260,3 +1382,6 @@ function isDMBasedChannel(channel) {
 }
 
 module.exports = VoiceConnection;
+// `StreamConnection` vốn là lớp riêng của module. Gắn ra ngoài để test khoá được
+// phần IDENTIFY của Go Live, thứ dễ hỏng nhất khi tách `streams` khỏi voice thường.
+module.exports.StreamConnection = StreamConnection;
