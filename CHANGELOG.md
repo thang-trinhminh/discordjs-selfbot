@@ -3,6 +3,20 @@
 Every entry below was found by running the library against a real Discord account,
 not by reading code. Where a claim is not proven, it says so.
 
+## 0.2.1
+
+No library code changed since 0.2.0 — `src/` and `typings/` are byte for byte the
+same. Releases publish themselves from now on.
+
+- Pressing **Publish release** on GitHub runs lint, the unit tests and the
+  TypeScript checks, then publishes to npmjs and to GitHub Packages as two
+  independent jobs.
+- npmjs authenticates through OIDC trusted publishing rather than a stored token,
+  so there is no long-lived credential to leak, and npm attaches provenance
+  linking the tarball to the commit that built it.
+- The pipeline refuses to publish when the git tag and `package.json` version
+  disagree.
+
 ## 0.2.0
 
 ### Voice works
