@@ -16,19 +16,19 @@ tài khoản người dùng, thay cho
 
 Đang phát triển, **chưa dùng cho việc thật**. Chưa publish lên npm.
 
-| Phần                                                   | Trạng thái                                 |
-| ------------------------------------------------------ | ------------------------------------------ |
-| REST (spoof header, TLS fingerprint, proxy, captcha)   | xong                                       |
-| Gateway (identify cho tài khoản người dùng)            | xong                                       |
-| Quan hệ, phiên đăng nhập, ghi chú, cài đặt, thanh toán | xong                                       |
-| Group DM, cuộc gọi                                     | xong                                       |
-| Custom status, rich presence, Spotify RPC              | xong                                       |
-| WebEmbed                                               | xong                                       |
-| Lớp tương thích v13 + codemod                          | xong                                       |
-| TypeScript                                             | xong                                       |
-| Gửi interaction với tư cách user                       | xong                                       |
-| Voice / video / Go Live                                | đã port, **chưa chứng minh** (xem ghi chú) |
-| Đăng nhập QR, đăng nhập mật khẩu (kèm 2FA)             | xong                                       |
+| Phần                                                   | Trạng thái                      |
+| ------------------------------------------------------ | ------------------------------- |
+| REST (spoof header, TLS fingerprint, proxy, captcha)   | xong                            |
+| Gateway (identify cho tài khoản người dùng)            | xong                            |
+| Quan hệ, phiên đăng nhập, ghi chú, cài đặt, thanh toán | xong                            |
+| Group DM, cuộc gọi                                     | xong                            |
+| Custom status, rich presence, Spotify RPC              | xong                            |
+| WebEmbed                                               | xong                            |
+| Lớp tương thích v13 + codemod                          | xong                            |
+| TypeScript                                             | xong                            |
+| Gửi interaction với tư cách user                       | xong                            |
+| Voice / video / Go Live                                | chạy được, cần `@snazzah/davey` |
+| Đăng nhập QR, đăng nhập mật khẩu (kèm 2FA)             | xong                            |
 
 > [!IMPORTANT]
 > Phần đăng nhập và các đường chỉ đọc đã chạy thật với token thật (xem
@@ -38,12 +38,20 @@ tài khoản người dùng, thay cho
 > trong `src/util/UserRoutes.js` đều lấy từ bản v13 và **chưa được xác minh**
 > với Discord hiện tại.
 
+> [!IMPORTANT]
+> **Voice cần `@snazzah/davey`.** `npm i @snazzah/davey`. Từ tháng 3/2026 Discord
+> bắt buộc giao thức mã hoá đầu cuối DAVE cho mọi voice call không phải stage, và
+> ngắt kết nối với client không nói được nó. Nó là `optionalDependency` để người
+> không đụng voice khỏi phải build một native module; thiếu nó thì `joinChannel`
+> ném ra một câu nói rõ tên gói. Muốn gửi audio còn cần `ffmpeg` trong `PATH` và
+> một binding Opus (`@discordjs/opus`, hoặc `opusscript`), lib không bundle cái nào.
+
 > [!WARNING]
-> Riêng phần voice/video còn yếu hơn thế. Nó được port nguyên từ bản v13 và mọi
-> file đều nạp được, nhưng phần lõi — UDP, đóng gói RTP, handshake voice gateway,
-> mã hoá — **chỉ chứng minh được bằng một voice channel thật**. Test hiện tại chỉ
-> khoá được phần thuần tuý: bảng codec, dựng SDP, bitfield, và các chỗ v13 dùng
-> chuỗi enum mà v14 dùng số. Coi phần này là "đã port", không phải "đã chạy".
+> Voice vào được kênh thật và pass toàn bộ smoke suite — vào kênh, phát, mở stream
+> nhận, mở kết nối Go Live, rời kênh. Còn hai chỗ chưa chứng minh: chưa ai nghe
+> bằng tai, và ở một mình trong kênh thì nhóm DAVE không tới epoch nên chính đường
+> mã hoá đầu cuối chưa từng chạy với Discord. Video và Go Live thì không được mã
+> hoá đầu cuối.
 
 ## Tài liệu
 

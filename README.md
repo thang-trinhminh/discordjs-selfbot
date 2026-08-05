@@ -14,19 +14,19 @@ accounts, replacing the archived
 
 Under development, **not ready for production**. Not published to npm.
 
-| Area                                                    | Status                           |
-| ------------------------------------------------------- | -------------------------------- |
-| REST (header spoofing, TLS fingerprint, proxy, captcha) | done                             |
-| Gateway (user account identify)                         | done                             |
-| Relationships, sessions, notes, settings, billing       | done                             |
-| Group DMs, calls                                        | done                             |
-| Custom status, rich presence, Spotify RPC               | done                             |
-| WebEmbed                                                | done                             |
-| v13 compatibility layer + codemod                       | done                             |
-| TypeScript                                              | done                             |
-| Sending interactions as a user                          | done                             |
-| Voice / video / Go Live                                 | ported, **unproven** (see below) |
-| QR login, password login (with 2FA)                     | done                             |
+| Area                                                    | Status                        |
+| ------------------------------------------------------- | ----------------------------- |
+| REST (header spoofing, TLS fingerprint, proxy, captcha) | done                          |
+| Gateway (user account identify)                         | done                          |
+| Relationships, sessions, notes, settings, billing       | done                          |
+| Group DMs, calls                                        | done                          |
+| Custom status, rich presence, Spotify RPC               | done                          |
+| WebEmbed                                                | done                          |
+| v13 compatibility layer + codemod                       | done                          |
+| TypeScript                                              | done                          |
+| Sending interactions as a user                          | done                          |
+| Voice / video / Go Live                                 | works, needs `@snazzah/davey` |
+| QR login, password login (with 2FA)                     | done                          |
 
 > [!IMPORTANT]
 > Login and the read-only surface have been exercised against a real account
@@ -36,13 +36,21 @@ Under development, **not ready for production**. Not published to npm.
 > in `src/util/UserRoutes.js` come from the v13 fork and remain **unverified**
 > against today's Discord.
 
+> [!IMPORTANT]
+> **Voice needs `@snazzah/davey`.** `npm i @snazzah/davey`. Discord has required
+> the DAVE end-to-end encryption protocol on every non-stage voice call since
+> March 2026 and hangs up on clients that cannot speak it. It is an
+> `optionalDependency` so that people who never touch voice are not made to build
+> a native module; without it `joinChannel` throws a sentence naming the package.
+> Sending audio also needs `ffmpeg` on `PATH` and an Opus binding
+> (`@discordjs/opus`, or `opusscript`), neither of which is bundled.
+
 > [!WARNING]
-> Voice and video are weaker still. They were ported wholesale from the v13 fork
-> and every file loads, but the core — UDP, RTP packetisation, the voice gateway
-> handshake, encryption — **can only be proven by a real voice channel**. The
-> current tests pin the pure parts: the codec table, SDP construction, bitfields,
-> and the places where v13 used string enums and v14 uses numbers. Treat this as
-> "ported", not "working".
+> Voice joins a real channel and passes its whole smoke suite — join, play,
+> receive stream, Go Live connection, leave. Two things are still unproven: no
+> human has listened to the audio, and alone in a channel the DAVE group never
+> reaches an epoch, so the end-to-end encryption path itself has never run against
+> Discord. Video and Go Live are not end-to-end encrypted at all.
 
 ## Docs
 
