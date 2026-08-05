@@ -173,15 +173,6 @@ const ClientUserActions = {
       body: {},
     });
   },
-
-  /**
-   * Lấy số burst reaction credit còn lại.
-   * @returns {Promise<number>}
-   */
-  async fetchBurstCredit() {
-    const data = await this.client.rest.get(UserRoutes.burstCredits());
-    return data.amount;
-  },
 };
 
 module.exports = ClientUserActions;

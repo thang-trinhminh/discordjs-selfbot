@@ -2,8 +2,28 @@
 
 const EventEmitter = require('events');
 const { setTimeout, setInterval } = require('node:timers');
-const { Opcodes, VoiceOpcodes } = require('../util/VoiceConstants');
+const { DAVE_PROTOCOL_VERSION } = require('./DAVESession');
+const { VoiceOpcodes } = require('../util/VoiceConstants');
 const WebSocket = require('../util/VoiceWebSocketShim');
+
+/**
+ * Mã đóng mà thử lại bao nhiêu lần cũng vậy. Bản port cứ thấy đóng là reconnect,
+ * nên một lỗi vĩnh viễn biến thành năm vòng gõ cửa vô ích rồi caller ngồi chờ
+ * tới `VOICE_CONNECTION_TIMEOUT` mà không biết lý do thật.
+ * @type {Map<number, string>}
+ */
+const FATAL_CLOSE_CODES = new Map([
+  [4004, 'Authentication failed'],
+  [4006, 'Session is no longer valid'],
+  [4017, 'E2EE/DAVE protocol required'],
+]);
+
+/**
+ * Bị ngắt khỏi kênh — chuyện bình thường (bị kick, kênh bị xoá). Ngừng thử lại,
+ * nhưng không nâng thành `error`: nhiều app không lắng nghe và sẽ chết theo.
+ * @type {number}
+ */
+const DISCONNECTED_CLOSE_CODE = 4014;
 
 /**
  * Represents a Voice Connection's WebSocket.
@@ -26,6 +46,12 @@ class VoiceWebSocket extends EventEmitter {
     this.attempts = 0;
 
     this._sequenceNumber = -1;
+
+    /**
+     * Ai đang trong kênh. DAVE cần danh sách này để kiểm người mới khi xử lý proposals.
+     * @type {Set<Snowflake>}
+     */
+    this.connectedClients = new Set();
 
     this.dead = false;
     this.connection.on('closing', this.shutdown.bind(this));
@@ -66,7 +92,8 @@ class VoiceWebSocket extends EventEmitter {
     if (this.dead) return;
     if (this.ws) this.reset();
     if (this.attempts >= 5) {
-      this.emit('debug', new Error('VOICE_CONNECTION_ATTEMPTS_EXCEEDED', this.attempts));
+      // Bản port chỉ `debug` ở đây, nên promise của caller không bao giờ settle.
+      this.emit('error', new Error(`VOICE_CONNECTION_ATTEMPTS_EXCEEDED after ${this.attempts} attempts`));
       return;
     }
 
@@ -86,11 +113,12 @@ class VoiceWebSocket extends EventEmitter {
 
   /**
    * Sends data to the WebSocket if it is open.
-   * @param {string} data The data to send to the WebSocket
+   * @param {string|Buffer} data The data to send to the WebSocket
+   * @param {string} [description] Mô tả cho log, vì Buffer in ra thì vô nghĩa
    * @returns {Promise<string>}
    */
-  send(data) {
-    this.emit('debug', `[WS] >> ${data}`);
+  send(data, description = data) {
+    this.emit('debug', `[WS] >> ${description}`);
     return new Promise((resolve, reject) => {
       if (!this.ws || this.ws.readyState !== WebSocket.OPEN) throw new Error('WS_NOT_OPEN', data);
       this.ws.send(data, null, error => {
@@ -98,6 +126,16 @@ class VoiceWebSocket extends EventEmitter {
         else resolve(data);
       });
     });
+  }
+
+  /**
+   * Gửi một frame nhị phân của DAVE.
+   * @param {number} op Opcode
+   * @param {Buffer} payload Nội dung
+   * @returns {Promise<string>}
+   */
+  sendBinary(op, payload) {
+    return this.send(WebSocket.packBinary(op, payload), `binary op ${op}, ${payload.length} bytes`);
   }
 
   /**
@@ -116,14 +154,19 @@ class VoiceWebSocket extends EventEmitter {
   onOpen() {
     this.emit('debug', `[WS] opened at gateway ${this.connection.authentication.endpoint}`);
     this.sendPacket({
-      op: Opcodes.DISPATCH,
+      op: VoiceOpcodes.IDENTIFY,
       d: {
         server_id: this.connection.serverId || this.connection.channel.guild?.id || this.connection.channel.id,
+        channel_id: this.connection.channel.id,
         user_id: this.client.user.id,
         token: this.connection.authentication.token,
         session_id: this.connection.authentication.sessionId,
-        streams: [{ type: 'screen', rid: '100', quality: 100 }],
-        video: true,
+        // Khai 0, hoặc bỏ trống, thì Discord đóng bằng 4017. Đây chính là lý do
+        // voice của bản port chưa bao giờ vào được kênh.
+        max_dave_protocol_version: DAVE_PROTOCOL_VERSION,
+        // `streams` và `video` là payload riêng của Go Live. Chỉ `StreamConnection`
+        // khai, xem `VoiceConnection#identifyExtras`.
+        ...this.connection.identifyExtras,
       },
     }).catch(() => {
       this.emit('error', new Error('VOICE_JOIN_SOCKET_CLOSED'));
@@ -137,10 +180,27 @@ class VoiceWebSocket extends EventEmitter {
    */
   onMessage(event) {
     try {
-      return this.onPacket(WebSocket.unpack(event.data, 'json'));
+      const packet = WebSocket.unpack(event.data);
+      // `ws` trả chuỗi cho frame text và Buffer cho frame nhị phân. DAVE là loại thứ hai.
+      return typeof event.data === 'string' ? this.onPacket(packet) : this.onBinaryPacket(packet);
     } catch (error) {
       return this.onError(error);
     }
+  }
+
+  /**
+   * Called whenever a binary DAVE frame is received.
+   * @param {Object} frame The parsed frame
+   */
+  onBinaryPacket({ op, seq, payload }) {
+    if (seq) this._sequenceNumber = seq;
+    this.emit('debug', `[WS] << binary op ${op}, ${payload.length} bytes`);
+    /**
+     * Emitted whenever a binary DAVE frame is received.
+     * @param {Object} frame
+     * @event VoiceWebSocket#daveBinary
+     */
+    this.emit('daveBinary', { op, payload });
   }
 
   /**
@@ -149,7 +209,17 @@ class VoiceWebSocket extends EventEmitter {
    */
   onClose(event) {
     this.emit('debug', `[WS] closed with code ${event.code} and reason: ${event.reason}`);
-    if (!this.dead) setTimeout(this.connect.bind(this), this.attempts * 1000).unref();
+    if (this.dead) return;
+
+    const fatal = FATAL_CLOSE_CODES.get(event.code);
+    if (fatal) {
+      this.emit('error', new Error(`Voice websocket closed with ${event.code}: ${event.reason || fatal}`));
+      return;
+    }
+
+    if (event.code === DISCONNECTED_CLOSE_CODE) return;
+
+    setTimeout(this.connect.bind(this), this.attempts * 1000).unref();
   }
 
   /**
@@ -198,7 +268,11 @@ class VoiceWebSocket extends EventEmitter {
           hasVideo: Boolean(packet.d.video_ssrc),
         });
         break;
+      case VoiceOpcodes.CLIENTS_CONNECT:
+        for (const id of packet.d.user_ids) this.connectedClients.add(id);
+        break;
       case VoiceOpcodes.CLIENT_DISCONNECT:
+        this.connectedClients.delete(packet.d.user_id);
         const streamInfo = this.connection.receiver && this.connection.receiver.packets.streams.get(packet.d.user_id);
         if (streamInfo) {
           this.connection.receiver.packets.streams.delete(packet.d.user_id);
@@ -220,6 +294,16 @@ class VoiceWebSocket extends EventEmitter {
          * @event VoiceWebSocket#startStreaming
          */
         this.emit('startStreaming', packet.d);
+        break;
+      case VoiceOpcodes.DAVE_PREPARE_TRANSITION:
+      case VoiceOpcodes.DAVE_EXECUTE_TRANSITION:
+      case VoiceOpcodes.DAVE_PREPARE_EPOCH:
+        /**
+         * Emitted whenever a JSON DAVE packet is received.
+         * @param {Object} packet
+         * @event VoiceWebSocket#daveMessage
+         */
+        this.emit('daveMessage', packet);
         break;
       default:
         /**

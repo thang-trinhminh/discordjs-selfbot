@@ -148,19 +148,34 @@ test('setHypeSquad tu choi nha khong ton tai', async () => {
   client.destroy();
 });
 
+// Shape that cua `POST /users/@me/invites`. Diem quan trong la `channel: null`:
+// loi moi ket ban khong tro toi kenh nao, va upstream Invite#_patch doc thang
+// `data.channel.id` nen no tung nem TypeError o day.
+const friendInvite = code => ({
+  code,
+  channel: null,
+  type: 2,
+  uses: 0,
+  max_uses: 5,
+  max_age: 604_800,
+  inviter: { id: '1', username: 'a', discriminator: '0', global_name: null },
+});
+
 test('friend invite: tao, liet ke, huy', async () => {
   const client = makeClient();
   const posts = [];
   const deletes = [];
   client.rest.post = async (route, options) => {
     posts.push([route, options]);
-    return { code: 'abc' };
+    return friendInvite('abc');
   };
-  client.rest.get = async () => [{ code: 'abc' }, { code: 'def' }];
+  client.rest.get = async () => [friendInvite('abc'), friendInvite('def')];
   client.rest.delete = async route => deletes.push(route);
 
   const invite = await client.user.createFriendInvite();
   assert.strictEqual(invite.code, 'abc');
+  assert.strictEqual(invite.channel, null);
+  assert.strictEqual(invite.channelId, null);
   assert.deepStrictEqual(posts, [['/users/@me/invites', { body: {} }]]);
 
   const all = await client.user.fetchFriendInvites();
@@ -196,15 +211,6 @@ test('stopRinging resolve kenh thanh id', async () => {
 
   await client.user.stopRinging('900');
   assert.deepStrictEqual(posts, [['/channels/900/call/stop-ringing', { body: {} }]]);
-
-  client.destroy();
-});
-
-test('fetchBurstCredit tra ve so amount', async () => {
-  const client = makeClient();
-  client.rest.get = async () => ({ amount: 7 });
-
-  assert.strictEqual(await client.user.fetchBurstCredit(), 7);
 
   client.destroy();
 });

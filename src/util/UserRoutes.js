@@ -103,14 +103,6 @@ const UserRoutes = {
   },
 
   /**
-   * Route số burst reaction credit còn lại.
-   * @returns {string}
-   */
-  burstCredits() {
-    return '/users/@me/burst-credits';
-  },
-
-  /**
    * Route chấp nhận Điều khoản dịch vụ và Chính sách quyền riêng tư.
    * @returns {string}
    */
@@ -269,6 +261,18 @@ const UserRoutes = {
    */
   interactions() {
     return '/interactions';
+  },
+
+  /**
+   * Route lấy toàn bộ application command của một guild.
+   *
+   * Route search theo kênh chỉ trả về rỗng với kênh trong guild — client thật
+   * dùng index này để dựng danh sách khi bạn gõ `/`.
+   * @param {Snowflake} guildId Id của guild
+   * @returns {string}
+   */
+  guildApplicationCommandIndex(guildId) {
+    return `/guilds/${guildId}/application-command-index`;
   },
 
   /**

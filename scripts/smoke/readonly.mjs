@@ -2,11 +2,11 @@
 // de chi ton dung 1 identify.
 // Chay: node --env-file=.env scripts/smoke/readonly.mjs
 // Khong chay trong CI.
-import { appendFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import process from 'node:process';
 import { setTimeout, clearTimeout } from 'node:timers';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { appendResults } from './log.mjs';
 
 const require = createRequire(import.meta.url);
 const { Client } = require('../../src/index.js');
@@ -98,6 +98,64 @@ client.once('ready', async () => {
     return `id khop=${user.id === client.user.id} bot=${user.bot}`;
   });
 
+  await check('users.fetch(friend, force)', async () => {
+    // Route /users/:id/profile voi mot nguoi khac, khong phai chinh minh.
+    const friendId = client.relationships.friendCache.firstKey();
+    if (!friendId) return 'skipped: no friend in cache';
+    const user = await client.users.fetch(friendId, { force: true });
+    return `id khop=${user.id === friendId} co username=${Boolean(user.username)}`;
+  });
+
+  await check('relationships.fetch(user)', async () => {
+    const friendId = client.relationships.friendCache.firstKey();
+    if (!friendId) return 'skipped: no friend in cache';
+    const type = await client.relationships.fetch(friendId);
+    return `kieu quan he=${type}`;
+  });
+
+  await check('billing.fetchPaymentSources()', async () => {
+    const sources = await client.billing.fetchPaymentSources();
+    return `nguon=${sources.size}`;
+  });
+
+  await check('billing.fetchGuildBoosts()', async () => {
+    const boosts = await client.billing.fetchGuildBoosts();
+    return `slot=${boosts.size} da dung=${boosts.filter(boost => boost.used).size}`;
+  });
+
+  await check('billing.fetchCurrentSubscription()', async () => {
+    const subscriptions = await client.billing.fetchCurrentSubscription();
+    return `goi=${subscriptions.size}`;
+  });
+
+  await check('user.fetchFriendInvites()', async () => {
+    const invites = await client.user.fetchFriendInvites();
+    return `loi moi=${invites.size}`;
+  });
+
+  await check('authorizedApplications()', async () => {
+    const apps = await client.authorizedApplications();
+    const shaped = apps.every(entry => entry.application && Array.isArray(entry.scopes));
+    return `app=${apps.size} dung dang=${shaped}`;
+  });
+
+  await check('channel.searchApplicationCommands()', async () => {
+    // Uu tien DM: khong co permission overwrite nen khong bao gio tra 50013.
+    const searchable = item => typeof item.searchApplicationCommands === 'function';
+    const channel =
+      client.channels.cache.find(item => searchable(item) && !item.guild) ??
+      client.channels.cache.find(item => searchable(item));
+    if (!channel) return 'skipped: khong co kenh text trong cache';
+    try {
+      const data = await channel.searchApplicationCommands({ limit: 1 });
+      return `lenh=${data.application_commands?.length ?? 0}`;
+    } catch (error) {
+      // 50013 nghia la route dung va token duoc chap nhan, chi kenh nay chan quyen.
+      if (error.code === 50013) return 'route ok, kenh chan UseApplicationCommands';
+      throw error;
+    }
+  });
+
   const failed = results.filter(result => result.status === 'FAIL');
   const passed = results.length - failed.length;
 
@@ -107,12 +165,8 @@ client.once('ready', async () => {
   );
   console.log(`tong: ${passed}/${results.length} pass`);
 
-  // File: chi ngay va pass/fail.
-  const row = [
-    `| ${new Date().toISOString().replace('T', ' ').slice(0, 16)} | readonly | ${passed}/${results.length} |`,
-    failed.length ? ` ${failed.map(result => result.name).join(', ')} |` : ' — |',
-  ].join('');
-  appendFileSync(LOG_FILE, `${row}\n`);
+  // File: mot dong moi check, chi ngay va pass/fail. Khong ghi gia tri tra ve.
+  appendResults(LOG_FILE, 'readonly', results);
   console.log(`Da ghi ket qua vao ${LOG_FILE.pathname}`);
 
   client.destroy();

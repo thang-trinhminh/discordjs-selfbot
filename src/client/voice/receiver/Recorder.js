@@ -7,7 +7,13 @@ const { Buffer } = require('node:buffer');
 const { Writable } = require('stream');
 const find = require('find-process');
 const kill = require('tree-kill');
-const { RtpPacket } = require('werift-rtp');
+// `werift-rtp` ton ~19MB va ~25ms luc nap, va chi can khi that su co goi RTP di qua.
+// Nap o lan dung dau tien de nguoi chi dung REST khong phai tra tien cho no.
+let RtpPacket = null;
+function rtpPacket() {
+  RtpPacket ??= require('werift-rtp').RtpPacket;
+  return RtpPacket;
+}
 const { randomPorts } = require('../util/Function');
 const { getSDPCodecName } = require('../util/Sdp');
 const { StreamOutput } = require('../util/Socket');
@@ -129,8 +135,8 @@ class Recorder extends EventEmitter {
       }
     },
   ) {
-    if (!(payload instanceof RtpPacket)) {
-      payload = RtpPacket.deSerialize(Buffer.isBuffer(payload) ? payload : Buffer.from(payload));
+    if (!(payload instanceof rtpPacket())) {
+      payload = rtpPacket().deSerialize(Buffer.isBuffer(payload) ? payload : Buffer.from(payload));
     }
     const message = payload.serialize();
     // Get port from payloadType

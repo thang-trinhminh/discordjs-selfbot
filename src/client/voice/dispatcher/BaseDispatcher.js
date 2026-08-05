@@ -345,6 +345,20 @@ class BaseDispatcher extends Writable {
     }
   }
 
+  /**
+   * Mã hoá đầu cuối một gói opus.
+   *
+   * Lớp này nằm **trong** lớp mã hoá transport: Discord vẫn giải được lớp ngoài để
+   * định tuyến, nhưng không đọc được nội dung.
+   * @param {Buffer} buffer Gói opus
+   * @returns {Buffer}
+   * @private
+   */
+  _daveEncrypt(buffer) {
+    const { dave } = this.player.voiceConnection;
+    return dave ? dave.encrypt(buffer) : buffer;
+  }
+
   _createPacket(buffer, isLastPacket) {
     /*
     // Packet is raw rtp from ffmpeg
@@ -389,7 +403,9 @@ class BaseDispatcher extends Writable {
       8,
       4,
     );
-    return Buffer.concat([rtpHeader, ...this._encrypt(buffer, rtpHeader)]);
+    // Chỉ audio. Video chưa được DAVE hoá trong bản này.
+    const payload = this.getTypeDispatcher() === 'video' ? buffer : this._daveEncrypt(buffer);
+    return Buffer.concat([rtpHeader, ...this._encrypt(payload, rtpHeader)]);
   }
 
   _sendPacket(packet) {

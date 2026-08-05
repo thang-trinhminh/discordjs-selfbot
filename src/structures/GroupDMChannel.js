@@ -17,19 +17,6 @@ const { UserRoutes } = require('../util/UserRoutes');
  * @implements {TextBasedChannel}
  */
 class GroupDMChannel extends PartialGroupDMChannel {
-  constructor(client, data) {
-    super(client, data);
-
-    // Constructor cha gán `recipients` thành own data property dạng mảng thô,
-    // nên phải defineProperty đè lên mới trả được Collection<Snowflake, User>
-    // như bản v13. Prototype getter đơn thuần sẽ bị own property che mất.
-    Object.defineProperty(this, 'recipients', {
-      configurable: true,
-      enumerable: true,
-      get: () => new Collection(this._recipients.map(recipient => [recipient.id, this.client.users._add(recipient)])),
-    });
-  }
-
   /**
    * Upstream đặt hết field của group DM trong constructor chứ không có `_patch`,
    * nên phải lặp lại ở đây — nếu không thì `edit()` và event update sẽ không
@@ -62,6 +49,41 @@ class GroupDMChannel extends PartialGroupDMChannel {
     } else {
       this._recipients ??= [];
     }
+  }
+
+  /**
+   * Thành viên trong nhóm.
+   * @type {Collection<Snowflake, User>}
+   * @readonly
+   */
+  // Cặp getter/setter này phải nằm trên prototype, không được `defineProperty`
+  // thẳng lên instance: `Base#_clone()` chạy `Object.assign(Object.create(this),
+  // this)`, bản sao thừa kế accessor chỉ-đọc gắn trên instance nên phép gán ném
+  // TypeError — mọi `CHANNEL_UPDATE` của group DM (đổi tên, đổi icon, đổi chủ
+  // nhóm) sẽ nổ ngay trong handler packet và giết cả client.
+  get recipients() {
+    return new Collection(this._recipients.map(recipient => [recipient.id, this.client.users._add(recipient)]));
+  }
+
+  /**
+   * Chỉ để hứng `this.recipients = data.recipients ?? []` của constructor cha:
+   * getter không kèm setter thì phép gán đó ném thẳng TypeError. Dữ liệu thật
+   * nằm ở `_recipients`, `_patch` ghi trực tiếp vào đó.
+   * @param {Object[]} value Mảng thành viên thô
+   * @private
+   */
+  set recipients(value) {
+    this._recipients = Array.isArray(value) ? [...value] : [];
+  }
+
+  /**
+   * `flatten` chỉ đọc own enumerable property, mà `recipients` giờ là getter trên
+   * prototype nên phải khai báo tường minh để nó không biến mất khỏi `toJSON()`.
+   * @param {...Object} props Thuộc tính cần thêm
+   * @returns {Object}
+   */
+  toJSON(...props) {
+    return super.toJSON({ recipients: true }, ...props);
   }
 
   /**

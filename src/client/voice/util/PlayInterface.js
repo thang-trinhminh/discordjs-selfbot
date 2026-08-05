@@ -1,7 +1,12 @@
 'use strict';
 
 const { Readable } = require('stream');
-const prism = require('prism-media');
+// `prism-media` ton ~6MB luc nap va chi can khi co audio that su chay qua.
+let prismMedia = null;
+function prism() {
+  prismMedia ??= require('prism-media');
+  return prismMedia;
+}
 
 /**
  * Options that can be passed to stream-playing methods:
@@ -64,10 +69,10 @@ class PlayInterface {
         return this.player.playOpusStream(resource, options);
       } else if (type === 'ogg/opus') {
         if (!(resource instanceof Readable)) throw new Error('VOICE_PRISM_DEMUXERS_NEED_STREAM');
-        return this.player.playOpusStream(resource.pipe(new prism.opus.OggDemuxer()), options);
+        return this.player.playOpusStream(resource.pipe(new (prism().opus.OggDemuxer)()), options);
       } else if (type === 'webm/opus') {
         if (!(resource instanceof Readable)) throw new Error('VOICE_PRISM_DEMUXERS_NEED_STREAM');
-        return this.player.playOpusStream(resource.pipe(new prism.opus.WebmDemuxer()), options);
+        return this.player.playOpusStream(resource.pipe(new (prism().opus.WebmDemuxer)()), options);
       }
     }
     throw new Error('VOICE_PLAY_INTERFACE_BAD_TYPE');

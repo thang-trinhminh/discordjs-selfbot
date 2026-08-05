@@ -55,6 +55,9 @@ exports.HypeSquadHouse = require('./util/UserEnums').HypeSquadHouse;
 exports.RelationshipType = require('./util/UserEnums').RelationshipType;
 exports.SamsungActivityAction = require('./util/UserEnums').SamsungActivityAction;
 exports.CallState = require('./structures/CallState');
+// `CustomStatus` va `RichPresence` deu ke thua no, va typings khai `export abstract
+// class`, nen ai viet lop rieng `extends BaseActivityBuilder` phai lay duoc no.
+exports.BaseActivityBuilder = require('./structures/RichPresence').BaseActivityBuilder;
 exports.CustomStatus = require('./structures/RichPresence').CustomStatus;
 exports.GroupDMChannel = require('./structures/GroupDMChannel');
 exports.GuildBoost = require('./structures/GuildBoost');
@@ -76,6 +79,12 @@ exports.BaseGuildEmojiManager = require('./managers/BaseGuildEmojiManager');
 exports.CachedManager = require('./managers/CachedManager');
 exports.ChannelManager = require('./managers/ChannelManager');
 exports.ClientVoiceManager = require('./client/voice/ClientVoiceManager');
+// Voice: `joinChannel` tra ve `VoiceConnection`, va so sanh `connection.status` thi
+// can `VoiceStatus`. Khong export ra thi nguoi dung TypeScript khong goi ten duoc.
+exports.VoiceConnection = require('./client/voice/VoiceConnection');
+exports.VoiceReceiver = require('./client/voice/receiver/Receiver');
+exports.DAVESession = require('./client/voice/networking/DAVESession').DAVESession;
+exports.VoiceStatus = require('./client/voice/util/VoiceConstants').VoiceStatus;
 exports.DataManager = require('./managers/DataManager');
 exports.DMMessageManager = require('./managers/DMMessageManager');
 exports.EntitlementManager = require('./managers/EntitlementManager').EntitlementManager;

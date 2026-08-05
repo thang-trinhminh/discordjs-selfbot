@@ -31,11 +31,32 @@ module.exports = {
 
   /**
    * Giải mã một gói nhận được.
-   * @param {*} data Dữ liệu thô
+   *
+   * `ws` trả frame text dưới dạng chuỗi và frame nhị phân dưới dạng `Buffer`, nên
+   * kiểu của `data` chính là thứ phân biệt hai loại. DAVE là loại thứ hai, và bản
+   * port cũ `JSON.parse` mọi thứ nên frame nhị phân đầu tiên làm nó ném lỗi.
+   * @param {string|Buffer|ArrayBuffer} data Dữ liệu thô
    * @returns {Object}
    */
   unpack(data) {
-    return JSON.parse(typeof data === 'string' ? data : Buffer.from(data).toString('utf8'));
+    if (typeof data === 'string') return JSON.parse(data);
+
+    const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
+    return {
+      seq: buffer.readUInt16BE(0),
+      op: buffer.readUInt8(2),
+      payload: buffer.subarray(3),
+    };
+  },
+
+  /**
+   * Đóng gói một frame nhị phân để gửi đi. Chiều gửi không mang `seq`.
+   * @param {number} op Opcode
+   * @param {Buffer} payload Nội dung
+   * @returns {Buffer}
+   */
+  packBinary(op, payload) {
+    return Buffer.concat([Uint8Array.from([op]), payload]);
   },
 
   /**

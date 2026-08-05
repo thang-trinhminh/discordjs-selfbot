@@ -18,6 +18,11 @@ import {
   WebEmbed,
   RelationshipType,
   HypeSquadHouse,
+  ClientVoiceManager,
+  VoiceConnection,
+  VoiceReceiver,
+  DAVESession,
+  VoiceStatus,
 } from '.';
 
 // `intents` không còn bắt buộc: đây là điểm chặn đầu tiên với người dùng TypeScript.
@@ -72,7 +77,6 @@ expectType<string>(new WebEmbed({ baseURL: 'https://embed.kalix.vn' }).setTitle(
 declare const clientUser: ClientUser;
 expectType<Promise<ClientUser>>(clientUser.edit({ username: 'a', password: 'b', bio: 'c', pronouns: 'd' }));
 expectType<Promise<ClientUser>>(clientUser.setGlobalName('Ten'));
-expectType<Promise<number>>(clientUser.fetchBurstCredit());
 
 // Boost.
 declare const boost: GuildBoost;
@@ -97,3 +101,21 @@ client.on('channelRecipientAdd', (channel, user) => {
 client.on('callCreate', call_ => {
   expectType<CallState>(call_);
 });
+
+// Voice: `joinChannel` là cửa vào duy nhất, và trước đây typings chỉ có bản
+// `ClientVoiceManager` của upstream nên TypeScript không thấy nó tồn tại.
+expectType<ClientVoiceManager>(client.voice);
+expectType<VoiceConnection | null>(client.voice.connection);
+expectType<Promise<VoiceConnection>>(client.voice.joinChannel('900'));
+expectType<Promise<VoiceConnection>>(client.voice.joinChannel('900', { selfDeaf: true, selfMute: true }));
+
+declare const voiceConnection: VoiceConnection;
+expectType<VoiceStatus>(voiceConnection.status);
+expectType<VoiceReceiver>(voiceConnection.receiver);
+expectType<Promise<VoiceConnection>>(voiceConnection.createStreamConnection());
+expectType<void>(voiceConnection.disconnect());
+
+// DAVE là E2EE của Discord; `null` khi voice server khai phiên bản 0.
+expectType<DAVESession | null>(voiceConnection.dave);
+declare const daveSession: DAVESession;
+expectType<string | null>(daveSession.voicePrivacyCode);

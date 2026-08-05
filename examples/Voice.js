@@ -25,7 +25,7 @@ client.on('ready', async () => {
   dispatcher.on('finish', () => console.log('Phát xong'));
 
   // Go Live: mở luồng rồi phát video vào đó.
-  const stream = await connection.createStream();
+  const stream = await connection.createStreamConnection();
   stream.playVideo('./video.mp4');
 });
 
