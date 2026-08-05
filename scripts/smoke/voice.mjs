@@ -129,7 +129,14 @@ client.once('ready', async () => {
       const dispatcher = connection.playAudio(silence);
       // 'finish' bao het stream; 'start' bao goi RTP dau tien da di.
       await waitFor(dispatcher, 'finish', READY_TIMEOUT_MS, 'dispatcher finish');
-      return `phat het 3s im lang, streamTime=${dispatcher.streamTime}ms`;
+
+      // Dispatcher khong co `streamTime`, chi co `totalStreamTime`. Doc nham ten thi
+      // duoc `undefined`, va check nay tung bao PASS ma khong do gi ca.
+      const played = dispatcher.totalStreamTime;
+      if (!(played >= 2500)) {
+        throw new Error(`moi phat duoc ${played}ms, doi it nhat 2500ms cho 3s im lang`);
+      }
+      return `phat het 3s im lang, totalStreamTime=${Math.round(played)}ms`;
     });
 
     await check('connection.createStreamConnection()', async () => {
