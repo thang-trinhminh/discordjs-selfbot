@@ -1,7 +1,27 @@
 {
   "name": "discordjs-selfbot",
-  "version": "0.1.0",
-  "description": "An unofficial discord.js v14 fork for user accounts",
+  "version": "0.2.0",
+  "description": "discord.js v14 for Discord user accounts: relationships, group DMs, rich presence, and voice with DAVE end-to-end encryption",
+  "keywords": [
+    "discord.js",
+    "selfbot",
+    "djs",
+    "api",
+    "bot",
+    "node",
+    "discord",
+    "client",
+    "discordapp",
+    "discordjs"
+  ],
+  "homepage": "https://github.com/trickstarcandina/discordjs-selfbot#readme",
+  "bugs": {
+    "url": "https://github.com/trickstarcandina/discordjs-selfbot/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trickstarcandina/discordjs-selfbot.git"
+  },
   "main": "./src/index.js",
   "types": "./typings/index.d.ts",
   "scripts": {
@@ -20,11 +40,12 @@
     "smoke:groupdm": "node --env-file=.env scripts/smoke/groupdm.mjs"
   },
   "files": [
-    "src",
-    "typings",
+    "CHANGELOG.md",
     "LICENSE",
     "LICENSE-APACHE",
-    "NOTICE"
+    "NOTICE",
+    "src",
+    "typings"
   ],
   "engines": {
     "node": ">=20.18"
@@ -67,5 +88,6 @@
     "prettier": "^3.9.6",
     "tsd": "^0.32.0",
     "typescript": "^5.5.4"
-  }
+  },
+  "author": "trickstarcandina"
 }
