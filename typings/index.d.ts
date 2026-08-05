@@ -1288,6 +1288,63 @@ export class ClientVoiceManager {
   private constructor(client: Client);
   public readonly client: Client;
   public adapters: Map<Snowflake, InternalDiscordGatewayAdapterLibraryMethods>;
+  public connection: VoiceConnection | null;
+  public joinChannel(
+    channel: VoiceBasedChannel | DMChannel | GroupDMChannel | Snowflake,
+    config?: JoinChannelConfig,
+  ): Promise<VoiceConnection>;
+}
+
+export interface JoinChannelConfig {
+  selfMute?: boolean;
+  selfDeaf?: boolean;
+  selfVideo?: boolean;
+  videoCodec?: 'H264' | 'VP8';
+}
+
+/** Đây là object hằng của v13, không phải enum TypeScript — khoá viết hoa hết. */
+export const VoiceStatus: {
+  CONNECTED: 0;
+  CONNECTING: 1;
+  AUTHENTICATING: 2;
+  RECONNECTING: 3;
+  DISCONNECTED: 4;
+};
+export type VoiceStatus = 0 | 1 | 2 | 3 | 4;
+
+/**
+ * Chỉ khai phần mà `docs/API.md` đã hứa. Phần còn lại của lớp là nội bộ và chưa
+ * từng được chứng minh, khai ra là hứa thứ chưa kiểm được.
+ */
+export class VoiceConnection extends EventEmitter {
+  private constructor(voiceManager: ClientVoiceManager, channel: VoiceBasedChannel);
+  public readonly client: Client;
+  public channel: VoiceBasedChannel;
+  public status: VoiceStatus;
+  public receiver: VoiceReceiver;
+  /** Phiên DAVE (E2EE), `null` khi voice server khai phiên bản 0 */
+  public dave: DAVESession | null;
+  public playAudio(resource: unknown, options?: unknown): unknown;
+  public createStreamConnection(): Promise<VoiceConnection>;
+  public disconnect(): void;
+}
+
+export class VoiceReceiver extends EventEmitter {
+  private constructor(connection: VoiceConnection);
+  public connection: VoiceConnection;
+  public createStream(
+    user: UserResolvable,
+    options?: { mode?: 'opus' | 'pcm'; end?: 'silence' | 'manual' },
+  ): import('node:stream').Readable;
+}
+
+export class DAVESession extends EventEmitter {
+  private constructor(protocolVersion: number, userId: Snowflake, channelId: Snowflake, options?: unknown);
+  public protocolVersion: number;
+  public userId: Snowflake;
+  public channelId: Snowflake;
+  /** `null` chừng nào nhóm MLS chưa có epoch — một mình trong kênh thì luôn `null` */
+  public readonly voicePrivacyCode: string | null;
 }
 
 export type ComponentInContainer =
