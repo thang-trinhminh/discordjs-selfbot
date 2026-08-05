@@ -266,22 +266,12 @@ test('nap thu vien khong keo theo werift-rtp va prism-media', () => {
   assert.deepStrictEqual(JSON.parse(output.trim()), []);
 });
 
-test('ten voice khai trong typings deu ton tai o runtime', () => {
-  const { readFileSync } = require('node:fs');
+test('VoiceStatus giu dung hinh dang hang so cua v13', () => {
   const lib = require('../src/index.js');
 
-  // Typings khai `export class VoiceConnection` la hua voi nguoi dung TypeScript
-  // rang `import { VoiceConnection } from 'discordjs-selfbot'` chay duoc. Neu
-  // src/index.js khong export thi ho nhan `undefined` luc chay, va tsc khong bat.
-  const names = ['ClientVoiceManager', 'VoiceConnection', 'VoiceReceiver', 'DAVESession', 'VoiceStatus'];
-  const typings = readFileSync('typings/index.d.ts', 'utf8');
-
-  for (const name of names) {
-    assert.match(typings, new RegExp(`export (class|const) ${name}\\b`), `typings thieu ${name}`);
-    assert.notStrictEqual(typeof lib[name], 'undefined', `src/index.js khong export ${name}`);
-  }
-
-  // VoiceStatus la object hang cua v13, khoa viet hoa het — typings phai khai dung.
+  // `scaffold.test.js` da kiem moi ten typings khai deu export duoc. Con lai o day
+  // la thu no khong kiem duoc: gia tri. Typings tung khai `Connected` trong khi
+  // hang thuc te la `CONNECTED`, va tsc khong he thay.
   assert.deepStrictEqual(lib.VoiceStatus, {
     CONNECTED: 0,
     CONNECTING: 1,

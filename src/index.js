@@ -55,6 +55,9 @@ exports.HypeSquadHouse = require('./util/UserEnums').HypeSquadHouse;
 exports.RelationshipType = require('./util/UserEnums').RelationshipType;
 exports.SamsungActivityAction = require('./util/UserEnums').SamsungActivityAction;
 exports.CallState = require('./structures/CallState');
+// `CustomStatus` va `RichPresence` deu ke thua no, va typings khai `export abstract
+// class`, nen ai viet lop rieng `extends BaseActivityBuilder` phai lay duoc no.
+exports.BaseActivityBuilder = require('./structures/RichPresence').BaseActivityBuilder;
 exports.CustomStatus = require('./structures/RichPresence').CustomStatus;
 exports.GroupDMChannel = require('./structures/GroupDMChannel');
 exports.GuildBoost = require('./structures/GuildBoost');
