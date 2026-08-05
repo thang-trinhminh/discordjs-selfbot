@@ -4,7 +4,7 @@
 // Chạy: DISCORD_TOKEN=... node examples/Basic.js
 
 const process = require('node:process');
-const { Client } = require('discordjs-selfbot');
+const { Client } = require('@trickstarcandina/discordjs-selfbot');
 
 // Không cần intents: gateway không nhận field đó với tài khoản người dùng.
 const client = new Client({});

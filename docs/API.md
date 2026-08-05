@@ -935,7 +935,7 @@ Every user-only endpoint this fork calls, as path builders. Exported so you can
 hit something not wrapped yet:
 
 ```js
-const { UserRoutes } = require('discordjs-selfbot');
+const { UserRoutes } = require('@trickstarcandina/discordjs-selfbot');
 await client.rest.get(UserRoutes.settings());
 ```
 

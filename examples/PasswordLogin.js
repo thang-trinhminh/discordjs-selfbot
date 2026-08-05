@@ -7,7 +7,7 @@
 // chặn bằng captcha. Cấu hình captchaSolver trước nếu tài khoản hay bị hỏi.
 
 const process = require('node:process');
-const { Client } = require('discordjs-selfbot');
+const { Client } = require('@trickstarcandina/discordjs-selfbot');
 
 const client = new Client({
   // Nhận object mô tả captcha, trả về chuỗi lời giải.

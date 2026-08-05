@@ -50,7 +50,7 @@ The same applies to every enum: `type`, `style`, `verificationLevel`,
 For the smallest diff, the v13-shaped `Constants` object is still there:
 
 ```js
-const { Constants } = require('discordjs-selfbot');
+const { Constants } = require('@trickstarcandina/discordjs-selfbot');
 if (channel.type === Constants.ChannelTypes.GUILD_TEXT) {
 }
 ```

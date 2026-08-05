@@ -18,7 +18,7 @@ test('upstream version is pinned to 14.27.0', () => {
 });
 
 // Khai `export class X` trong typings la hua voi nguoi dung TypeScript rang
-// `import { X } from 'discordjs-selfbot'` chay duoc. `tsc` khong kiem loi hua do:
+// `import { X } from '@trickstarcandina/discordjs-selfbot'` chay duoc. `tsc` khong kiem loi hua do:
 // no chi doc file .d.ts, khong doi chieu voi `src/index.js`. Thieu export thi
 // nguoi dung compile sach roi nhan `undefined` luc chay.
 //

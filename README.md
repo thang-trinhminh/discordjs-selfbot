@@ -1,6 +1,6 @@
 **English** | [Tiếng Việt](./README.vi.md)
 
-# discordjs-selfbot
+# @trickstarcandina/discordjs-selfbot
 
 A fork of [discord.js](https://github.com/discordjs/discord.js) `v14.27.0` for user
 accounts, replacing the archived
@@ -68,13 +68,13 @@ Under development, **not ready for production**. Not published to npm.
 Requires Node.js 20.18 or newer.
 
 ```sh
-npm install github:trickstarcandina/discordjs-selfbot
+npm install @trickstarcandina/discordjs-selfbot
 ```
 
 ## Usage
 
 ```js
-const { Client } = require('discordjs-selfbot');
+const { Client } = require('@trickstarcandina/discordjs-selfbot');
 
 const client = new Client({}); // no intents needed
 

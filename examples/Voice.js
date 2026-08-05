@@ -7,7 +7,7 @@
 // Discord thật. Xem khối cảnh báo trong README.
 
 const process = require('node:process');
-const { Client } = require('discordjs-selfbot');
+const { Client } = require('@trickstarcandina/discordjs-selfbot');
 
 const client = new Client({});
 

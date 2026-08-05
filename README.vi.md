@@ -1,6 +1,6 @@
 [English](./README.md) | **Tiếng Việt**
 
-# discordjs-selfbot
+# @trickstarcandina/discordjs-selfbot
 
 Fork của [discord.js](https://github.com/discordjs/discord.js) `v14.27.0` cho
 tài khoản người dùng, thay cho
@@ -69,13 +69,13 @@ tài khoản người dùng, thay cho
 Cần Node.js 20.18 trở lên.
 
 ```sh
-npm install github:trickstarcandina/discordjs-selfbot
+npm install @trickstarcandina/discordjs-selfbot
 ```
 
 ## Dùng thử
 
 ```js
-const { Client } = require('discordjs-selfbot');
+const { Client } = require('@trickstarcandina/discordjs-selfbot');
 
 const client = new Client({}); // không cần intents
 

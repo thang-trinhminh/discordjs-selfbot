@@ -48,7 +48,7 @@ upstream, tức mất chính lý do chuyển sang v14.
 Muốn viết ít nhất thì dùng `Constants` kiểu v13, vẫn còn:
 
 ```js
-const { Constants } = require('discordjs-selfbot');
+const { Constants } = require('@trickstarcandina/discordjs-selfbot');
 if (channel.type === Constants.ChannelTypes.GUILD_TEXT) {
 }
 ```

@@ -5,7 +5,7 @@
 // Chạy: DISCORD_TOKEN=... node examples/WebEmbed.js
 
 const process = require('node:process');
-const { Client, WebEmbed } = require('discordjs-selfbot');
+const { Client, WebEmbed } = require('@trickstarcandina/discordjs-selfbot');
 
 const client = new Client({});
 

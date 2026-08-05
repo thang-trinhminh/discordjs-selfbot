@@ -924,7 +924,7 @@ Toàn bộ endpoint chỉ dành cho user mà fork này gọi, dưới dạng hà
 Export ra để tự gọi thứ chưa được bọc:
 
 ```js
-const { UserRoutes } = require('discordjs-selfbot');
+const { UserRoutes } = require('@trickstarcandina/discordjs-selfbot');
 await client.rest.get(UserRoutes.settings());
 ```
 
