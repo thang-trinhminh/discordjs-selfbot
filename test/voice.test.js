@@ -245,6 +245,27 @@ test('websocket voice khong reconnect vo ich khi ma dong la vinh vien', async ()
   assert.strictEqual(reconnects, 1);
 });
 
+test('nap thu vien khong keo theo werift-rtp va prism-media', () => {
+  const { execFileSync } = require('node:child_process');
+  const process = require('node:process');
+
+  // Phai chay o tien trinh rieng: cac test khac trong file nay da nap san stack
+  // voice, nen do require.cache tai cho thi khong noi len dieu gi.
+  const probe = `
+    require('./src/index.js');
+    const loaded = Object.keys(require.cache);
+    const heavy = ['werift-rtp', 'prism-media'].filter(name =>
+      loaded.some(file => file.includes('node_modules/' + name + '/')),
+    );
+    console.log(JSON.stringify(heavy));
+  `;
+  const output = execFileSync(process.execPath, ['-e', probe], { encoding: 'utf8' });
+
+  // Hai goi nay chi can khi co goi RTP hoac audio that su chay qua. Nap san la bat
+  // nguoi chi dung REST tra tien cho thu ho khong dung.
+  assert.deepStrictEqual(JSON.parse(output.trim()), []);
+});
+
 test('opcode DAVE khop voi discord-api-types', () => {
   const { VoiceOpcodes: ApiVoiceOpcodes } = require('discord-api-types/voice/v8');
 

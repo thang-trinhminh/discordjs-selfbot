@@ -273,8 +273,8 @@ mention them at all — absence there means untested, not passing.
 | 2026-08-04 11:21 | groupdm     | mo cuoc goi bang voice state update + callCreate        | PASS   |
 | 2026-08-04 11:21 | groupdm     | channel.ring() + callUpdate                             | PASS   |
 | 2026-08-04 11:21 | groupdm     | roi cuoc goi + callDelete                               | PASS   |
-| 2026-08-05 08:46 | voice       | voice.joinChannel()                                     | PASS   |
-| 2026-08-05 08:46 | voice       | connection.playAudio()                                  | PASS   |
-| 2026-08-05 08:46 | voice       | connection.createStreamConnection()                     | PASS   |
-| 2026-08-05 08:46 | voice       | receiver.createStream()                                 | PASS   |
-| 2026-08-05 08:46 | voice       | connection.disconnect()                                 | PASS   |
+| 2026-08-05 09:19 | voice       | voice.joinChannel()                                     | PASS   |
+| 2026-08-05 09:19 | voice       | connection.playAudio()                                  | PASS   |
+| 2026-08-05 09:19 | voice       | connection.createStreamConnection()                     | PASS   |
+| 2026-08-05 09:19 | voice       | receiver.createStream()                                 | PASS   |
+| 2026-08-05 09:19 | voice       | connection.disconnect()                                 | PASS   |

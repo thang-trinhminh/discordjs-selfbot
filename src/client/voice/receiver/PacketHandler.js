@@ -4,7 +4,13 @@ const EventEmitter = require('events');
 const { Buffer } = require('node:buffer');
 const crypto = require('node:crypto');
 const { setTimeout } = require('node:timers');
-const { RtpPacket } = require('werift-rtp');
+// `werift-rtp` ton ~19MB va ~25ms luc nap, va chi can khi that su co goi RTP di qua.
+// Nap o lan dung dau tien de nguoi chi dung REST khong phai tra tien cho no.
+let RtpPacket = null;
+function rtpPacket() {
+  RtpPacket ??= require('werift-rtp').RtpPacket;
+  return RtpPacket;
+}
 const Recorder = require('./Recorder');
 const Speaking = require('../../../util/SpeakingBitField');
 const secretbox = require('../util/Secretbox');
@@ -129,7 +135,7 @@ class PacketHandler extends EventEmitter {
     }
     */
 
-    return RtpPacket.deSerialize(Buffer.concat([header, packet]));
+    return rtpPacket().deSerialize(Buffer.concat([header, packet]));
   }
 
   audioReceiver(ssrc, userStat, opusPacket) {

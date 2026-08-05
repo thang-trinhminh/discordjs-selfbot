@@ -19,7 +19,12 @@ Please use the @dank074/discord-video-stream library for the best support.
 
 const EventEmitter = require('events');
 const { Readable: ReadableStream } = require('stream');
-const prism = require('prism-media');
+// `prism-media` ton ~6MB luc nap va chi can khi co audio that su chay qua.
+let prismMedia = null;
+function prism() {
+  prismMedia ??= require('prism-media');
+  return prismMedia;
+}
 const { H264NalSplitter, H265NalSplitter } = require('./processing/AnnexBNalSplitter');
 const { IvfTransformer } = require('./processing/IvfSplitter');
 const { H264Dispatcher } = require('../dispatcher/AnnexBDispatcher');
@@ -126,7 +131,7 @@ class MediaPlayer extends EventEmitter {
       args.unshift(...FFMPEG_INPUT_PREFIX);
     }
 
-    const ffmpeg = new prism.FFmpeg({ args });
+    const ffmpeg = new (prism().FFmpeg)({ args });
     this.emit('debug', `[ffmpeg-audio_process] Spawn process with args:\n${args.join(' ')}`);
 
     ffmpeg.process.stderr.on('data', data => {
@@ -143,12 +148,12 @@ class MediaPlayer extends EventEmitter {
 
   playPCMStream(stream, options, streams = {}) {
     this.destroyDispatcher();
-    const opus = (streams.opus = new prism.opus.Encoder({ channels: 2, rate: 48000, frameSize: 960 }));
+    const opus = (streams.opus = new (prism().opus.Encoder)({ channels: 2, rate: 48000, frameSize: 960 }));
     if (options && options.volume === false) {
       stream.pipe(opus);
       return this.playOpusStream(opus, options, streams);
     }
-    streams.volume = new prism.VolumeTransformer({ type: 's16le', volume: options ? options.volume : 1 });
+    streams.volume = new (prism().VolumeTransformer)({ type: 's16le', volume: options ? options.volume : 1 });
     stream.pipe(streams.volume).pipe(opus);
     return this.playOpusStream(opus, options, streams);
   }
@@ -158,12 +163,12 @@ class MediaPlayer extends EventEmitter {
     streams.opus = stream;
     if (options.volume !== false && !streams.input) {
       streams.input = stream;
-      const decoder = new prism.opus.Decoder({ channels: 2, rate: 48000, frameSize: 960 });
-      streams.volume = new prism.VolumeTransformer({ type: 's16le', volume: options ? options.volume : 1 });
+      const decoder = new (prism().opus.Decoder)({ channels: 2, rate: 48000, frameSize: 960 });
+      streams.volume = new (prism().VolumeTransformer)({ type: 's16le', volume: options ? options.volume : 1 });
       streams.opus = stream
         .pipe(decoder)
         .pipe(streams.volume)
-        .pipe(new prism.opus.Encoder({ channels: 2, rate: 48000, frameSize: 960 }));
+        .pipe(new (prism().opus.Encoder)({ channels: 2, rate: 48000, frameSize: 960 }));
     }
     const dispatcher = this.createDispatcher(options, streams);
     streams.opus.pipe(dispatcher);
@@ -224,7 +229,7 @@ class MediaPlayer extends EventEmitter {
       args.push(...options.outputFFmpegArgs);
     }
 
-    const ffmpeg = new prism.FFmpeg({ args });
+    const ffmpeg = new (prism().FFmpeg)({ args });
     const streams = { ffmpeg };
 
     if (isStream) {

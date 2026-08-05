@@ -1,7 +1,12 @@
 'use strict';
 
 const EventEmitter = require('events');
-const prism = require('prism-media');
+// `prism-media` ton ~6MB luc nap va chi can khi co audio that su chay qua.
+let prismMedia = null;
+function prism() {
+  prismMedia ??= require('prism-media');
+  return prismMedia;
+}
 const PacketHandler = require('./PacketHandler');
 const { PCMInsertSilence } = require('../player/processing/PCMInsertSilence');
 
@@ -50,18 +55,18 @@ class VoiceReceiver extends EventEmitter {
     if (!user) throw new Error('VOICE_USER_MISSING');
     const stream = this.packets.makeStream(user.id, end); // Opus stream
     if (paddingSilence) {
-      const decoder = new prism.opus.Decoder({ channels: 2, rate: 48000, frameSize: 960 });
+      const decoder = new (prism().opus.Decoder)({ channels: 2, rate: 48000, frameSize: 960 });
       const pcmTransformer = new PCMInsertSilence();
       stream.pipe(decoder).pipe(pcmTransformer);
       if (mode === 'opus') {
-        const encoder = new prism.opus.Encoder({ channels: 2, rate: 48000, frameSize: 960 });
+        const encoder = new (prism().opus.Encoder)({ channels: 2, rate: 48000, frameSize: 960 });
         pcmTransformer.pipe(encoder);
         return encoder;
       }
       return pcmTransformer;
     } else {
       if (mode === 'pcm') {
-        const decoder = new prism.opus.Decoder({ channels: 2, rate: 48000, frameSize: 960 });
+        const decoder = new (prism().opus.Decoder)({ channels: 2, rate: 48000, frameSize: 960 });
         stream.pipe(decoder);
         return decoder;
       }
