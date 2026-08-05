@@ -1,0 +1,113 @@
+# Publish khi bam "Publish release" tren GitHub. Khong chay o push tag, va khong
+# chay o push thuong: husky van la cong hang ngay, cai nay chi lo phan release.
+#
+# Bam nut la hanh dong co chu dich, va truoc do release con o dang draft de doc
+# lai. Push tag thi ban ngay, khong co buoc nao de doi y.
+#
+# Hai job publish tach roi nhau va deu `needs: verify`. Neu npmjs thanh cong ma
+# GitHub Packages hong, bam "Re-run failed jobs" la chay lai dung cai hong, khong
+# publish lai cai da xong. Gop chung mot job thi phai viet them logic bo qua.
+#
+# npmjs dung Trusted Publishing (OIDC): khong co NPM_TOKEN, khong co secret nao
+# song lau de ro. Doi lai phai khai `id-token: write`, va phai chay npm >= 11.5.1
+# tren Node >= 22.14 — do la ly do dung Node 24, vi Node 22 con ship npm 10.x.
+# Phai khai truoc mot lan tren npmjs.com: trang goi -> Settings -> Trusted
+# Publisher -> GitHub Actions, dien owner `trickstarcandina`, repo
+# `discordjs-selfbot`, workflow filename `publish.yml`. Ten file phai trung tuyet
+# doi; doi ten file nay la publish gay.
+name: publish
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      # Husky cai git hook, trong CI thi vo nghia va `npm ci` se chay `prepare`.
+      HUSKY: 0
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # Tag va package.json lech nhau la loi im lang nhat cua release: goi publish
+      # ra mang version khac han cai tag tro toi, va khong ai phat hien.
+      # Voi su kien `release`, GITHUB_REF_NAME la ten tag cua release do.
+      - name: tag phai khop package.json
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG="$(node -p 'require("./package.json").version')"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "tag $GITHUB_REF_NAME khong khop package.json $PKG"
+            exit 1
+          fi
+          echo "tag $GITHUB_REF_NAME khop version $PKG"
+
+      # `@snazzah/davey` la optionalDependency nhung test voice doi no co that.
+      - name: davey phai nap duoc
+        run: node -e "const v=require('./src/client/voice/networking/DAVESession.js').DAVE_PROTOCOL_VERSION; if (!(v>0)) { console.error('davey khong nap duoc, DAVE_PROTOCOL_VERSION =', v); process.exit(1); } console.log('DAVE_PROTOCOL_VERSION =', v);"
+
+      - run: npm run lint
+      - run: node --test
+      - run: npm run test:typescript
+
+  npmjs:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # OIDC: GitHub ky mot token ngan han, npmjs doi chieu voi repo va ten file
+      # workflow da khai. Thieu dong nay la npm khong xin duoc token nao ca.
+      id-token: write
+    env:
+      HUSKY: 0
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      # Scoped package mac dinh bi coi la private; thieu --access public la npm tu choi.
+      # Khong co NODE_AUTH_TOKEN: OIDC lo phan xac thuc, va npm tu dinh kem
+      # provenance nen nguoi dung kiem duoc goi build tu commit nao.
+      - run: npm publish --access public
+
+  github-packages:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      HUSKY: 0
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://npm.pkg.github.com
+
+      - run: npm ci
+
+      # GITHUB_TOKEN cua workflow du quyen, khong can tao PAT rieng. Scope cua goi
+      # (@trickstarcandina) phai trung ten owner, va no dang trung.
+      - run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
