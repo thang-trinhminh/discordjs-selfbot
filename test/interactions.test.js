@@ -3,7 +3,7 @@
 const assert = require('node:assert');
 const { Buffer } = require('node:buffer');
 const { test } = require('node:test');
-const { setImmediate } = require('node:timers');
+const { clearInterval, setImmediate, setInterval } = require('node:timers');
 const { ApplicationCommandOptionType, ComponentType, InteractionType } = require('discord-api-types/v10');
 const Client = require('../src/client/Client.js');
 const {
@@ -129,7 +129,13 @@ test('awaitInteractionResponse nhan ca modal', async () => {
 
 test('awaitInteractionResponse het gio thi reject va go listener', async () => {
   const client = new Client({});
-  await assert.rejects(() => awaitInteractionResponse(client, 'n3', 20), /did not get a response/);
+  // Timer hết giờ bị `unref` có chủ đích, nên không còn gì giữ event loop: Node 22
+  // thấy loop rỗng là huỷ test này cùng mọi test phía sau trong file. Giữ loop sống
+  // bằng một timer có ref cho tới khi reject.
+  const keepAlive = setInterval(() => {}, 1_000);
+  await assert
+    .rejects(() => awaitInteractionResponse(client, 'n3', 20), /did not get a response/)
+    .finally(() => clearInterval(keepAlive));
 
   // Không được rò listener sau khi hết giờ.
   assert.strictEqual(client.listenerCount('messageCreate'), 0);

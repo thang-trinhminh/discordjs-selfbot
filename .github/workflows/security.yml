@@ -1,0 +1,49 @@
+# Quet bao mat dinh ky. Khong chay o push: husky van la cong hang ngay (xem
+# .husky/pre-push). Cai nay bat thu husky khong bat duoc — lo hong moi duoc cong
+# bo cho mot dependency ma code cua ta khong doi dong nao.
+name: security
+
+on:
+  schedule:
+    # Thu hai 02:17 UTC. Lech khoi phut 0 de khong ket hang doi cua GitHub.
+    - cron: '17 2 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    env:
+      HUSKY: 0
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: npm run audit:prod
+      - run: npm run audit:all
+      - run: npm run audit:signatures
+      - run: node --test test/security.test.js
+      - run: npm run check:package
+
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Ghi ket qua vao tab Security > Code scanning.
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - uses: github/codeql-action/analyze@v3

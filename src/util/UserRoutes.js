@@ -1,6 +1,25 @@
 'use strict';
 
 /**
+ * Mã hoá một tham số trước khi ghép vào path.
+ *
+ * Thiếu bước này thì giá trị lấy từ nội dung tin nhắn — mã quà, mã mời — chứa
+ * `../`, `?` hay `#` sẽ bẻ path sang endpoint khác, và request đó vẫn mang token:
+ * `gift-codes/../../invites/abc#/redeem` thành `POST /invites/abc`. `@` để nguyên
+ * vì nó hợp lệ trong path và Discord dùng `@me`.
+ * @param {*} value Tham số
+ * @returns {string}
+ */
+function segment(value) {
+  const encoded = encodeURIComponent(String(value)).replaceAll('%40', '@');
+  // `.` và `..` không có ký tự nào để mã hoá, nhưng URL vẫn hiểu là lùi thư mục.
+  if (encoded === '' || encoded === '.' || encoded === '..') {
+    throw new TypeError(`Invalid route parameter: ${JSON.stringify(value)}`);
+  }
+  return encoded;
+}
+
+/**
  * Route chỉ user account mới gọi được. `discord-api-types` chỉ liệt kê route
  * dành cho bot nên phải tự khai ở đây. Gom một chỗ để khi Discord đổi path thì
  * chỉ sửa một file.
@@ -20,7 +39,7 @@ const UserRoutes = {
    * @returns {string}
    */
   relationship(userId) {
-    return `/users/@me/relationships/${userId}`;
+    return `/users/@me/relationships/${segment(userId)}`;
   },
 
   /**
@@ -29,7 +48,7 @@ const UserRoutes = {
    * @returns {string}
    */
   note(userId) {
-    return `/users/@me/notes/${userId}`;
+    return `/users/@me/notes/${segment(userId)}`;
   },
 
   /**
@@ -39,7 +58,7 @@ const UserRoutes = {
    * @returns {string}
    */
   profile(userId) {
-    return `/users/${userId}/profile`;
+    return `/users/${segment(userId)}/profile`;
   },
 
   /**
@@ -48,7 +67,7 @@ const UserRoutes = {
    * @returns {string}
    */
   applicationExternalAssets(applicationId) {
-    return `/applications/${applicationId}/external-assets`;
+    return `/applications/${segment(applicationId)}/external-assets`;
   },
 
   /**
@@ -57,7 +76,7 @@ const UserRoutes = {
    * @returns {string}
    */
   channelCall(channelId) {
-    return `/channels/${channelId}/call`;
+    return `/channels/${segment(channelId)}/call`;
   },
 
   /**
@@ -66,7 +85,7 @@ const UserRoutes = {
    * @returns {string}
    */
   channelCallRing(channelId) {
-    return `/channels/${channelId}/call/ring`;
+    return `/channels/${segment(channelId)}/call/ring`;
   },
 
   /**
@@ -75,7 +94,7 @@ const UserRoutes = {
    * @returns {string}
    */
   channelCallStopRinging(channelId) {
-    return `/channels/${channelId}/call/stop-ringing`;
+    return `/channels/${segment(channelId)}/call/stop-ringing`;
   },
 
   /**
@@ -148,7 +167,7 @@ const UserRoutes = {
    * @returns {string}
    */
   guildOnboardingResponses(guildId) {
-    return `/guilds/${guildId}/onboarding-responses`;
+    return `/guilds/${segment(guildId)}/onboarding-responses`;
   },
 
   /**
@@ -157,7 +176,7 @@ const UserRoutes = {
    * @returns {string}
    */
   guildMemberVerification(guildId) {
-    return `/guilds/${guildId}/member-verification`;
+    return `/guilds/${segment(guildId)}/member-verification`;
   },
 
   /**
@@ -166,7 +185,7 @@ const UserRoutes = {
    * @returns {string}
    */
   guildJoinRequest(guildId) {
-    return `/guilds/${guildId}/requests/@me`;
+    return `/guilds/${segment(guildId)}/requests/@me`;
   },
 
   /**
@@ -175,7 +194,7 @@ const UserRoutes = {
    * @returns {string}
    */
   redeemGiftCode(code) {
-    return `/entitlements/gift-codes/${code}/redeem`;
+    return `/entitlements/gift-codes/${segment(code)}/redeem`;
   },
 
   /**
@@ -192,7 +211,7 @@ const UserRoutes = {
    * @returns {string}
    */
   oauth2Token(tokenId) {
-    return `/oauth2/tokens/${tokenId}`;
+    return `/oauth2/tokens/${segment(tokenId)}`;
   },
 
   /**
@@ -201,7 +220,7 @@ const UserRoutes = {
    * @returns {string}
    */
   applicationPublic(applicationId) {
-    return `/applications/${applicationId}/public`;
+    return `/applications/${segment(applicationId)}/public`;
   },
 
   /**
@@ -242,7 +261,7 @@ const UserRoutes = {
    * @returns {string}
    */
   guildPremiumSubscriptions(guildId) {
-    return `/guilds/${guildId}/premium/subscriptions`;
+    return `/guilds/${segment(guildId)}/premium/subscriptions`;
   },
 
   /**
@@ -252,7 +271,7 @@ const UserRoutes = {
    * @returns {string}
    */
   guildPremiumSubscription(guildId, subscriptionId) {
-    return `/guilds/${guildId}/premium/subscriptions/${subscriptionId}`;
+    return `/guilds/${segment(guildId)}/premium/subscriptions/${segment(subscriptionId)}`;
   },
 
   /**
@@ -272,7 +291,7 @@ const UserRoutes = {
    * @returns {string}
    */
   guildApplicationCommandIndex(guildId) {
-    return `/guilds/${guildId}/application-command-index`;
+    return `/guilds/${segment(guildId)}/application-command-index`;
   },
 
   /**
@@ -281,7 +300,7 @@ const UserRoutes = {
    * @returns {string}
    */
   channelApplicationCommandSearch(channelId) {
-    return `/channels/${channelId}/application-commands/search`;
+    return `/channels/${segment(channelId)}/application-commands/search`;
   },
 
   /**
@@ -290,7 +309,7 @@ const UserRoutes = {
    * @returns {string}
    */
   channelAttachments(channelId) {
-    return `/channels/${channelId}/attachments`;
+    return `/channels/${segment(channelId)}/attachments`;
   },
 
   /**
@@ -307,7 +326,7 @@ const UserRoutes = {
    * @returns {string}
    */
   guildSettings(guildId) {
-    return `/users/@me/guilds/${guildId}/settings`;
+    return `/users/@me/guilds/${segment(guildId)}/settings`;
   },
 
   /**
@@ -327,4 +346,4 @@ const UserRoutes = {
   },
 };
 
-module.exports = { UserRoutes };
+module.exports = { UserRoutes, segment };

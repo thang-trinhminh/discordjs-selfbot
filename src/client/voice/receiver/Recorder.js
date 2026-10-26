@@ -20,6 +20,21 @@ const { StreamOutput } = require('../util/Socket');
 const { getPayloadType } = require('../util/VoiceConstants');
 
 /**
+ * Chọn đúng tiến trình ffmpeg do Recorder này sinh ra.
+ *
+ * Chỉ khớp theo pid hoặc ppid. Bản v13 còn khớp cả tiến trình nào có dòng lệnh
+ * chứa cùng bộ tham số, mà hai Recorder chạy song song (hay ffmpeg của chương
+ * trình khác) có thể trùng tham số — thế là kill nhầm tiến trình không phải của mình.
+ * @param {Array<{pid: number, ppid: number}>} list Kết quả của `find-process`
+ * @param {number} ffmpegPid Pid của tiến trình đã spawn
+ * @returns {?Object}
+ */
+function findOwnFFmpeg(list, ffmpegPid) {
+  if (!ffmpegPid) return null;
+  return list.find(o => o.pid === ffmpegPid || o.ppid === ffmpegPid) ?? null;
+}
+
+/**
  * Represents a FFmpeg handler
  * @extends {EventEmitter}
  */
@@ -154,10 +169,8 @@ class Recorder extends EventEmitter {
   }
 
   destroy() {
-    const ffmpegPid = this.stream.pid; // But it is ppid ;-;
-    const args = this.stream.spawnargs.slice(1).join(' '); // Skip ffmpeg
     find('name', 'ffmpeg', true).then(list => {
-      let process = list.find(o => o.pid === ffmpegPid || o.ppid === ffmpegPid || o.cmd.includes(args));
+      const process = findOwnFFmpeg(list, this.stream.pid);
       if (process) {
         kill(process.pid);
         this.receiver?.videoStreams?.delete(this.userId);
@@ -178,3 +191,4 @@ class Recorder extends EventEmitter {
 }
 
 module.exports = Recorder;
+module.exports.findOwnFFmpeg = findOwnFFmpeg;
