@@ -64,6 +64,10 @@ upstream có thể nâng mức tối thiểu của dependency (ví dụ `undici`
 | `RemoteAuth.connect(client)` khi `client.login` lỗi                  | Unhandled rejection, promise treo mãi                                                                                                                                                                                                                          | `connect()` reject với lỗi đăng nhập                                                     |
 | `Recorder.destroy` tìm ffmpeg theo dòng lệnh                         | Có thể `kill` nhầm tiến trình khác (Recorder thứ hai, hay ffmpeg của chương trình khác) có cùng tham số                                                                                                                                                        | Chỉ khớp pid/ppid (`findOwnFFmpeg`)                                                      |
 | `uploadToSlot` nhận mọi scheme                                       | Nội dung file có thể đi qua `http` không mã hoá                                                                                                                                                                                                                | Chỉ `https:`                                                                             |
+| `Recorder` chạy ffmpeg với `-y`                                      | Đường dẫn output trỏ vào file có sẵn là file đó bị ghi đè, không hỏi                                                                                                                                                                                           | Ném lỗi trừ khi có `{ overwrite: true }`; ngoài ra ffmpeg nhận `-n`                      |
+| `authorizeURL` chép mọi query parameter vào body                     | Link dựng sẵn đặt được field body như `authorize` hay `location_context`                                                                                                                                                                                       | Chỉ chép tham số OAuth2; field khác truyền qua `options`                                 |
+| `http.headers` đặt được `authorization`                              | Config dựng từ dữ liệu ngoài có thể gửi request bằng token khác                                                                                                                                                                                                | Bỏ `authorization` khỏi `http.headers`                                                   |
+| GitHub Actions ghim theo tag                                         | Tag bị dời hay bị chiếm sẽ chạy trong job publish, job có quyền đẩy lên npm                                                                                                                                                                                    | Ghim theo commit SHA; checkout không giữ token; job publish không dùng cache chung       |
 
 ## Rủi ro đã biết, chưa sửa
 
@@ -75,19 +79,11 @@ Ghi lại thay vì sửa, vì sửa sẽ đổi hành vi mà người gọi có 
   nội bộ. Ứng dụng phải tự chỉ cho phép URL `https:`.
   `inputFFmpegArgs`/`outputFFmpegArgs` là tham số ffmpeg thô — đừng bao giờ lấy từ
   input người dùng.
-- **Đường dẫn output của `Recorder` được truyền nguyên** cho ffmpeg kèm `-y` (ghi đè).
-- **`authorizeURL` chép mọi query parameter vào body**, kể cả `permissions` và
-  `scope`. Đó là mục đích của hàm, nhưng nghĩa là chỉ URL quyết định cấp quyền gì —
-  chỉ gọi với URL bạn tin.
-- **`client.options.http.headers` ghi đè được mọi header**, kể cả `authorization`.
-  Đừng dựng nó từ dữ liệu không tin cậy.
+- **`authorizeURL` lấy `permissions` và `scope` từ URL.** Đó là mục đích của hàm,
+  nhưng nghĩa là chỉ URL quyết định cấp quyền gì — chỉ gọi với URL bạn tin.
 - **`Routes` của upstream (discord-api-types) cũng không mã hoá tham số.** Id lấy từ
   payload của Discord thì an toàn; chuỗi từ người dùng thì không. Resolve qua
   manager (`fetch`, `resolveId`) trước.
-- **`typings/*.test-d.ts` bị đóng gói theo.** Vô hại, chỉ tốn dung lượng.
-- **GitHub Actions ghim theo tag (`@v4`), không theo commit SHA.** Dependabot giữ
-  chúng mới; ghim SHA chống action bị chiếm quyền tốt hơn, nên làm trước khi gói có
-  nhiều người dùng.
 - **`paths-ignore` của CodeQL bỏ `test/` và `scripts/smoke/`**, nơi chỉ có credential
   giả. `src/` được quét đầy đủ.
 

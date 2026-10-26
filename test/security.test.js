@@ -9,7 +9,8 @@ const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 const { test } = require('node:test');
 const Client = require('../src/client/Client.js');
-const { findOwnFFmpeg } = require('../src/client/voice/receiver/Recorder.js');
+const Recorder = require('../src/client/voice/receiver/Recorder.js');
+const { findOwnFFmpeg } = Recorder;
 const { uploadToSlot } = require('../src/util/AttachmentUpload.js');
 const { RemoteAuth } = require('../src/util/RemoteAuth.js');
 const { UserRoutes, segment } = require('../src/util/UserRoutes.js');
@@ -183,6 +184,11 @@ test('findOwnFFmpeg chi khop pid/ppid, khong khop theo dong lenh', () => {
   // Tiến trình của mình đã thoát: không được kill tiến trình khác chỉ vì trùng lệnh.
   assert.strictEqual(findOwnFFmpeg(list, 99), null);
   assert.strictEqual(findOwnFFmpeg(list, undefined), null);
+});
+
+test('Recorder khong ghi de file da co neu khong duoc phep', () => {
+  // Ném trước khi mở socket hay spawn ffmpeg, nên test không cần ffmpeg.
+  assert.throws(() => new Recorder(null, { output: __filename, portUdpH264: 1, portUdpOpus: 2 }), /already exists/);
 });
 
 test('_censoredToken giau phan bi mat cua token', () => {

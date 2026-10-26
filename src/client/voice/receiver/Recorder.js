@@ -4,6 +4,7 @@ const { spawn } = require('child_process');
 const { createSocket } = require('dgram');
 const { EventEmitter } = require('events');
 const { Buffer } = require('node:buffer');
+const { existsSync } = require('node:fs');
 const { Writable } = require('stream');
 const find = require('find-process');
 const kill = require('tree-kill');
@@ -39,8 +40,21 @@ function findOwnFFmpeg(list, ffmpegPid) {
  * @extends {EventEmitter}
  */
 class Recorder extends EventEmitter {
-  constructor(receiver, { userId, portUdpH264, portUdpOpus, output } = {}) {
+  constructor(receiver, { userId, portUdpH264, portUdpOpus, output, overwrite = false } = {}) {
     super();
+
+    // Bản cũ luôn chạy ffmpeg với `-y`: đường dẫn lỡ trỏ vào file có sẵn là mất file
+    // đó, không hỏi. Ném ở đây, đồng bộ, để người gọi biết ngay chứ không phải đợi
+    // ffmpeg thoát.
+    if (typeof output === 'string' && !overwrite && existsSync(output)) {
+      throw new Error(`Recorder output already exists, pass { overwrite: true } to replace it: ${output}`);
+    }
+
+    /**
+     * Có ghi đè file output đã tồn tại hay không
+     * @type {boolean}
+     */
+    this.overwrite = overwrite;
 
     Object.defineProperty(this, 'receiver', { value: receiver });
 
@@ -118,7 +132,7 @@ class Recorder extends EventEmitter {
       '4M',
       '-c',
       'copy',
-      '-y',
+      this.overwrite ? '-y' : '-n',
       '-f',
       'matroska',
       isStream ? this.outputStream.url : output,

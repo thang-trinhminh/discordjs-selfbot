@@ -99,6 +99,26 @@ test('authorizeURL chuyen permissions/guild_id tu query sang body', async () => 
   client.destroy();
 });
 
+test('authorizeURL khong chep tham so la tu query vao body', async () => {
+  const client = makeClient();
+  let body;
+  client.rest.post = async (route, options) => {
+    body = options.body;
+    return {};
+  };
+
+  await client.authorizeURL(
+    'https://discord.com/oauth2/authorize?client_id=123&scope=identify&authorize=false&location_context=x&foo=1',
+  );
+
+  assert.strictEqual(body.authorize, true);
+  assert.deepStrictEqual(body.location_context, { guild_id: '10000', channel_id: '10000', channel_type: 10000 });
+  assert.ok(!('foo' in body));
+  assert.strictEqual(body.client_id, '123');
+
+  client.destroy();
+});
+
 test('installUserApps tra false khi app khong ho tro cai cho user', async () => {
   const client = makeClient();
   client.rest.get = async () => ({ integration_types_config: { 0: {} } });
