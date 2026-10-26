@@ -61,6 +61,21 @@ jobs:
       - run: node --test
       - run: npm run test:typescript
 
+      # Cong bao mat. Mot lo hong da biet trong dependency runtime la chan release:
+      # nguoi dung `npm i` goi nay se keo no ve, ma ta khong sua duoc version da publish.
+      # Dev dependency chi chan o muc high, vi no khong di theo goi.
+      - name: audit dependency runtime
+        run: npm run audit:prod
+      - name: audit ca dev dependency
+        run: npm run audit:all
+      # Chu ky registry va provenance cua tung goi da cai: bat duoc goi bi thay
+      # tren registry hay mirror, thu `npm audit` thuong khong nhin thay.
+      - name: kiem chu ky dependency
+        run: npm run audit:signatures
+      # Soi dung nhung file se len npm: khong .env, khong khoa, khong token.
+      - name: kiem noi dung goi
+        run: npm run check:package
+
   npmjs:
     needs: verify
     runs-on: ubuntu-latest

@@ -3,6 +3,22 @@
 Every entry below was found by running the library against a real Discord account,
 not by reading code. Where a claim is not proven, it says so.
 
+## Unreleased
+
+### Security
+
+- `UserRoutes` encodes every parameter. `redeemNitro` fed with message content
+  could be made to send an authenticated request to another endpoint, e.g.
+  `'../../invites/<code>#'` joined a server. See [`SECURITY.md`](./SECURITY.md).
+- `acceptInvite` rejects anything that is not a bare invite code.
+- `undici` raised to `^6.29.1` for five advisories.
+- `RemoteAuth` no longer crashes the process on a malformed packet, and
+  `connect(client)` rejects instead of hanging when `client.login` fails.
+- `Recorder.destroy` only kills the ffmpeg process it spawned.
+- `uploadToSlot` refuses non-`https` upload URLs.
+- Releases now also run `npm audit`, `npm audit signatures` and a check of the
+  tarball contents before publishing; a weekly workflow runs the audits and CodeQL.
+
 ## 0.2.1
 
 No library code changed since 0.2.0 — `src/` and `typings/` are byte for byte the

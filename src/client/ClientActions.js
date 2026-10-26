@@ -7,6 +7,7 @@ const Events = require('../util/Events');
 const { UserRoutes } = require('../util/UserRoutes');
 
 const NITRO_CODE_PATTERN = /(?:discord\.gift|discord(?:app)?\.com\/gifts)\/(\w{16,25})/;
+const INVITE_CODE_PATTERN = /^[\w-]{2,255}$/;
 const OAUTH2_URL_PATTERN = /^https:\/\/(?:canary\.|ptb\.)?discord\.com(?:\/api(?:\/v\d{1,2})?)?\/oauth2\/authorize\?/;
 
 /**
@@ -183,7 +184,12 @@ const ClientActions = {
     const { bypassOnboarding: doOnboarding = true, bypassVerify = true } = options;
 
     const code = resolveInviteCode(invite);
-    if (!code) throw new TypeError('Could not resolve an invite code from the given invite');
+    // `resolveInviteCode` trả nguyên chuỗi khi không khớp link nào, và `Routes.invite`
+    // của upstream ghép thẳng vào path: `../` hay `#` trong đó bẻ request mang token
+    // sang endpoint khác. Mã mời thật chỉ gồm chữ, số, `_` và `-`.
+    if (typeof code !== 'string' || !INVITE_CODE_PATTERN.test(code)) {
+      throw new TypeError('Could not resolve an invite code from the given invite');
+    }
 
     const resolved = await this.fetchInvite(code);
 

@@ -1,6 +1,6 @@
-# CHÚ Ý: file này chỉ có tác dụng khi bật CodeQL kiểu advanced setup (chạy bằng
-# workflow). Repo hiện không có workflow nào — kiểm thử chạy qua git hook của
-# husky. Giữ lại để nếu sau này bật code scanning thì đã có sẵn phần loại trừ.
+# Dùng bởi job `codeql` trong .github/workflows/security.yml (chạy hằng tuần và
+# chạy tay). Kiểm thử hằng ngày vẫn chạy qua git hook của husky; CodeQL chỉ quét
+# định kỳ để bắt cảnh báo mới khi bộ query được cập nhật.
 
 name: 'CodeQL config'
 

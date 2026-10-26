@@ -60,6 +60,7 @@ tài khoản người dùng, thay cho
 | [`docs/API.vi.md`](./docs/API.vi.md)     | Toàn bộ phần fork thêm vào, theo nhóm, kèm trạng thái tested/unit/ported từng mục |
 | [`MIGRATION.vi.md`](./MIGRATION.vi.md)   | Chuyển code từ `discord.js-selfbot-v13`, và codemod                               |
 | [`UPSTREAM.vi.md`](./UPSTREAM.vi.md)     | File upstream nào bị sửa, vì sao, và cách nâng cấp                                |
+| [`SECURITY.vi.md`](./SECURITY.vi.md)     | Báo lỗ hổng, lệnh audit, checklist trước khi release                              |
 | [`examples/`](./examples)                | 9 script chạy được                                                                |
 | [`scripts/smoke/`](./scripts/smoke)      | Kiểm tra bằng token thật, và log các lần chạy trước                               |
 | [discord.js.dev](https://discord.js.dev) | Mọi thứ không thuộc selfbot — giữ nguyên từ upstream                              |
