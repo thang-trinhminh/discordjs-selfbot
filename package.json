@@ -54,7 +54,7 @@
     "!typings/*.test-d.ts"
   ],
   "engines": {
-    "node": ">=20.18"
+    "node": ">=22.12"
   },
   "license": "GPL-3.0-or-later",
   "dependencies": {

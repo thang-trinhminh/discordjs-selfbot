@@ -5,6 +5,11 @@ not by reading code. Where a claim is not proven, it says so.
 
 ## Unreleased
 
+### Breaking
+
+- Node.js 22.12 or newer is required. Node 20 reached end of life on 2026-04-30
+  and no longer gets security fixes.
+
 ### Security
 
 - `UserRoutes` encodes every parameter. `redeemNitro` fed with message content
