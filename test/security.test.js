@@ -4,6 +4,7 @@
 // mang token. Mỗi test ứng với một lỗi có thật; xem SECURITY.md.
 
 const assert = require('node:assert');
+const { Buffer } = require('node:buffer');
 const { execFileSync } = require('node:child_process');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
@@ -193,12 +194,15 @@ test('Recorder khong ghi de file da co neu khong duoc phep', () => {
 
 test('_censoredToken giau phan bi mat cua token', () => {
   const client = makeClient();
-  // Ghép lúc chạy để chính file này không khớp mẫu token của test quét bên dưới.
-  client.token = ['MTIzNDU2Nzg5MDEyMzQ1Njc4', 'GabcDE', 'secretpartsecretpartsecretpart'].join('.');
+  // Token giả dựng lúc chạy, không để nguyên chuỗi trong file: nếu không thì test
+  // quét token bên dưới và các máy quét secret (GitGuardian) báo nhầm là lộ token.
+  const id = Buffer.from('123456789012345678').toString('base64');
+  const secret = 'x'.repeat(30);
+  client.token = [id, 'GabcDE', secret].join('.');
 
   const censored = client._censoredToken;
-  assert.ok(!censored.includes('secretpart'));
-  assert.ok(censored.startsWith('MTIzNDU2Nzg5MDEyMzQ1Njc4.GabcDE.'));
+  assert.ok(!censored.includes(secret));
+  assert.ok(censored.startsWith(`${id}.GabcDE.`));
 
   client.destroy();
 });
