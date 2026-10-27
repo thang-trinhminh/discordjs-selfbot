@@ -5,6 +5,11 @@ not by reading code. Where a claim is not proven, it says so.
 
 ## Unreleased
 
+### Breaking
+
+- Node.js 22.12 or newer is required. Node 20 reached end of life on 2026-04-30
+  and no longer gets security fixes.
+
 ### Security
 
 - `UserRoutes` encodes every parameter. `redeemNitro` fed with message content
@@ -16,6 +21,14 @@ not by reading code. Where a claim is not proven, it says so.
   `connect(client)` rejects instead of hanging when `client.login` fails.
 - `Recorder.destroy` only kills the ffmpeg process it spawned.
 - `uploadToSlot` refuses non-`https` upload URLs.
+- `receiver.createVideoStream(user, path)` throws when `path` already exists,
+  instead of overwriting it. Pass `{ overwrite: true }` as the third argument for
+  the old behaviour.
+- `authorizeURL` only copies OAuth2 parameters from the URL into the body. Send
+  anything else through `options`.
+- `authorization` in `client.options.http.headers` is ignored; the token only
+  comes from `login()`.
+- GitHub Actions are pinned by commit SHA.
 - Releases now also run `npm audit`, `npm audit signatures` and a check of the
   tarball contents before publishing; a weekly workflow runs the audits and CodeQL.
 

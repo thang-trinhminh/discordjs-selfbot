@@ -4,12 +4,14 @@
 // mang token. Mỗi test ứng với một lỗi có thật; xem SECURITY.md.
 
 const assert = require('node:assert');
+const { Buffer } = require('node:buffer');
 const { execFileSync } = require('node:child_process');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 const { test } = require('node:test');
 const Client = require('../src/client/Client.js');
-const { findOwnFFmpeg } = require('../src/client/voice/receiver/Recorder.js');
+const Recorder = require('../src/client/voice/receiver/Recorder.js');
+const { findOwnFFmpeg } = Recorder;
 const { uploadToSlot } = require('../src/util/AttachmentUpload.js');
 const { RemoteAuth } = require('../src/util/RemoteAuth.js');
 const { UserRoutes, segment } = require('../src/util/UserRoutes.js');
@@ -185,14 +187,22 @@ test('findOwnFFmpeg chi khop pid/ppid, khong khop theo dong lenh', () => {
   assert.strictEqual(findOwnFFmpeg(list, undefined), null);
 });
 
+test('Recorder khong ghi de file da co neu khong duoc phep', () => {
+  // Ném trước khi mở socket hay spawn ffmpeg, nên test không cần ffmpeg.
+  assert.throws(() => new Recorder(null, { output: __filename, portUdpH264: 1, portUdpOpus: 2 }), /already exists/);
+});
+
 test('_censoredToken giau phan bi mat cua token', () => {
   const client = makeClient();
-  // Ghép lúc chạy để chính file này không khớp mẫu token của test quét bên dưới.
-  client.token = ['MTIzNDU2Nzg5MDEyMzQ1Njc4', 'GabcDE', 'secretpartsecretpartsecretpart'].join('.');
+  // Token giả dựng lúc chạy, không để nguyên chuỗi trong file: nếu không thì test
+  // quét token bên dưới và các máy quét secret (GitGuardian) báo nhầm là lộ token.
+  const id = Buffer.from('123456789012345678').toString('base64');
+  const secret = 'x'.repeat(30);
+  client.token = [id, 'GabcDE', secret].join('.');
 
   const censored = client._censoredToken;
-  assert.ok(!censored.includes('secretpart'));
-  assert.ok(censored.startsWith('MTIzNDU2Nzg5MDEyMzQ1Njc4.GabcDE.'));
+  assert.ok(!censored.includes(secret));
+  assert.ok(censored.startsWith(`${id}.GabcDE.`));
 
   client.destroy();
 });

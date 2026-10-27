@@ -80,12 +80,15 @@ class VoiceReceiver extends EventEmitter {
    * <info>Proof of concept - Requires a very good internet connection</info>
    * @param {UserResolvable} user The user to start listening to.
    * @param {WritableStream|string} output Output stream or file path to write the video stream to.
+   * @param {Object} [options={}] Options
+   * @param {boolean} [options.overwrite=false] Replace `output` when it is a file that already exists.
+   * Without it, an existing file makes this throw.
    * @returns {Recorder} The video stream for the specified user.
    */
-  createVideoStream(user, output) {
+  createVideoStream(user, output, options = {}) {
     user = this.connection.client.users.resolve(user);
     if (!user) throw new Error('VOICE_USER_MISSING');
-    const stream = this.packets.makeVideoStream(user.id, output);
+    const stream = this.packets.makeVideoStream(user.id, output, options);
     return stream;
   }
 

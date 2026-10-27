@@ -67,7 +67,7 @@ tài khoản người dùng, thay cho
 
 ## Cài đặt
 
-Cần Node.js 20.18 trở lên.
+Cần Node.js 22.12 trở lên.
 
 ```sh
 npm install @trickstarcandina/discordjs-selfbot

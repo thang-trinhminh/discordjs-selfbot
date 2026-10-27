@@ -31,9 +31,12 @@ jobs:
       # Husky cai git hook, trong CI thi vo nghia va `npm ci` se chay `prepare`.
       HUSKY: 0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Khong de GITHUB_TOKEN nam lai trong .git/config cho cac buoc sau.
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
           cache: npm
@@ -87,12 +90,17 @@ jobs:
     env:
       HUSKY: 0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Khong de GITHUB_TOKEN nam lai trong .git/config cho cac buoc sau.
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
-          cache: npm
+          # Khong dung cache o job publish: cache dung chung voi job khac, ma job nay
+          # co quyen day goi len registry.
+          package-manager-cache: false
           registry-url: https://registry.npmjs.org
 
       - run: npm ci
@@ -111,12 +119,17 @@ jobs:
     env:
       HUSKY: 0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Khong de GITHUB_TOKEN nam lai trong .git/config cho cac buoc sau.
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
-          cache: npm
+          # Khong dung cache o job publish: cache dung chung voi job khac, ma job nay
+          # co quyen day goi len registry.
+          package-manager-cache: false
           registry-url: https://npm.pkg.github.com
 
       - run: npm ci

@@ -10,11 +10,10 @@ import process from 'node:process';
 
 const ALLOWED = [
   /^src\//,
-  // Test-d.ts dang bi dong goi theo (xem SECURITY.md): vo hai, chi them dung luong.
-  /^typings\/[^/]+\.(d\.ts|test-d\.ts|json)$/,
+  /^typings\/[^/]+\.(d\.ts|json)$/,
   /^(CHANGELOG\.md|LICENSE|LICENSE-APACHE|NOTICE|README(\.vi)?\.md|package\.json)$/,
 ];
-const FORBIDDEN = [/(^|\/)\.env(\.|$)/, /\.(pem|key|p12|pfx)$/, /(^|\/)\.npmrc$/, /^(test|scripts)\//];
+const FORBIDDEN = [/(^|\/)\.env(\.|$)/, /\.(pem|key|p12|pfx)$/, /(^|\/)\.npmrc$/, /^(test|scripts)\//, /\.test-d\.ts$/];
 const SECRETS = [
   ['token Discord', /[MNO][\w-]{23,27}\.[\w-]{6}\.[\w-]{27,40}/],
   ['token npm', /npm_[A-Za-z0-9]{36}/],
