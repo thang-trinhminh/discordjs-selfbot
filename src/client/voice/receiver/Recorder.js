@@ -4,6 +4,7 @@ const { spawn } = require('child_process');
 const { createSocket } = require('dgram');
 const { EventEmitter } = require('events');
 const { Buffer } = require('node:buffer');
+const { existsSync } = require('node:fs');
 const { Writable } = require('stream');
 const find = require('find-process');
 const kill = require('tree-kill');
@@ -20,12 +21,40 @@ const { StreamOutput } = require('../util/Socket');
 const { getPayloadType } = require('../util/VoiceConstants');
 
 /**
+ * Chọn đúng tiến trình ffmpeg do Recorder này sinh ra.
+ *
+ * Chỉ khớp theo pid hoặc ppid. Bản v13 còn khớp cả tiến trình nào có dòng lệnh
+ * chứa cùng bộ tham số, mà hai Recorder chạy song song (hay ffmpeg của chương
+ * trình khác) có thể trùng tham số — thế là kill nhầm tiến trình không phải của mình.
+ * @param {Array<{pid: number, ppid: number}>} list Kết quả của `find-process`
+ * @param {number} ffmpegPid Pid của tiến trình đã spawn
+ * @returns {?Object}
+ */
+function findOwnFFmpeg(list, ffmpegPid) {
+  if (!ffmpegPid) return null;
+  return list.find(o => o.pid === ffmpegPid || o.ppid === ffmpegPid) ?? null;
+}
+
+/**
  * Represents a FFmpeg handler
  * @extends {EventEmitter}
  */
 class Recorder extends EventEmitter {
-  constructor(receiver, { userId, portUdpH264, portUdpOpus, output } = {}) {
+  constructor(receiver, { userId, portUdpH264, portUdpOpus, output, overwrite = false } = {}) {
     super();
+
+    // Bản cũ luôn chạy ffmpeg với `-y`: đường dẫn lỡ trỏ vào file có sẵn là mất file
+    // đó, không hỏi. Ném ở đây, đồng bộ, để người gọi biết ngay chứ không phải đợi
+    // ffmpeg thoát.
+    if (typeof output === 'string' && !overwrite && existsSync(output)) {
+      throw new Error(`Recorder output already exists, pass { overwrite: true } to replace it: ${output}`);
+    }
+
+    /**
+     * Có ghi đè file output đã tồn tại hay không
+     * @type {boolean}
+     */
+    this.overwrite = overwrite;
 
     Object.defineProperty(this, 'receiver', { value: receiver });
 
@@ -103,7 +132,7 @@ class Recorder extends EventEmitter {
       '4M',
       '-c',
       'copy',
-      '-y',
+      this.overwrite ? '-y' : '-n',
       '-f',
       'matroska',
       isStream ? this.outputStream.url : output,
@@ -154,10 +183,8 @@ class Recorder extends EventEmitter {
   }
 
   destroy() {
-    const ffmpegPid = this.stream.pid; // But it is ppid ;-;
-    const args = this.stream.spawnargs.slice(1).join(' '); // Skip ffmpeg
     find('name', 'ffmpeg', true).then(list => {
-      let process = list.find(o => o.pid === ffmpegPid || o.ppid === ffmpegPid || o.cmd.includes(args));
+      const process = findOwnFFmpeg(list, this.stream.pid);
       if (process) {
         kill(process.pid);
         this.receiver?.videoStreams?.delete(this.userId);
@@ -178,3 +205,4 @@ class Recorder extends EventEmitter {
 }
 
 module.exports = Recorder;
+module.exports.findOwnFFmpeg = findOwnFFmpeg;

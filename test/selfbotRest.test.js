@@ -53,6 +53,15 @@ test('http.headers cua user ghi de duoc default', () => {
   assert.strictEqual(headers['accept-language'], 'vi-VN');
 });
 
+test('http.headers khong dat duoc authorization', () => {
+  const headers = buildSelfbotHeaders({
+    ...options,
+    http: { headers: { Authorization: 'other', authorization: 'other', 'x-keep': '1' } },
+  });
+  assert.ok(!Object.keys(headers).some(key => key.toLowerCase() === 'authorization'));
+  assert.strictEqual(headers['x-keep'], '1');
+});
+
 test('rewriteAuthorization bo prefix Bot', () => {
   const out = rewriteAuthorization({ authorization: 'Bot abc.def' }, 'abc.def');
   assert.strictEqual(out.authorization, 'abc.def');

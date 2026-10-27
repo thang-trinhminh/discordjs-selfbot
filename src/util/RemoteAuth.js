@@ -108,7 +108,16 @@ class RemoteAuth extends EventEmitter {
       client?.rest ?? require('../rest/SelfbotREST').createSelfbotREST(require('./Options').createDefault());
 
     this.#ws = this.#createSocket(GATEWAY_URL);
-    this.#ws.on('message', data => this.#handleMessage(data));
+    this.#ws.on('message', data => {
+      // Ném trong listener của socket là uncaught exception, sập cả tiến trình.
+      // Gói hỏng hay giải mã thất bại thì chỉ hỏng phiên đăng nhập này thôi.
+      try {
+        this.#handleMessage(data);
+      } catch (error) {
+        this.emit('error', error);
+        this.destroy();
+      }
+    });
     this.#ws.on('error', error => this.emit('error', error));
     this.#ws.on('close', () => {
       this.#stopHeartbeat();
@@ -117,8 +126,14 @@ class RemoteAuth extends EventEmitter {
 
     return new Promise((resolve, reject) => {
       this.once('finish', async token => {
-        if (client) await client.login(token);
-        resolve(token);
+        // Listener async ném thì EventEmitter không bắt: thành unhandled rejection
+        // và promise này treo mãi.
+        try {
+          if (client) await client.login(token);
+          resolve(token);
+        } catch (error) {
+          reject(error);
+        }
       });
       this.once('error', reject);
       this.once('cancel', () => reject(new Error('The login was cancelled from the other device')));
