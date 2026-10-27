@@ -57,6 +57,11 @@ function byteLengthOf(data) {
  * @returns {Promise<void>}
  */
 async function uploadToSlot(uploadUrl, data) {
+  // Địa chỉ do máy chủ cấp, nhưng nội dung file của người dùng không bao giờ được
+  // đi qua kênh không mã hoá, kể cả khi phản hồi bị sửa trên đường.
+  if (new URL(uploadUrl).protocol !== 'https:') {
+    throw new Error(`Refusing to upload an attachment over a non-https url: ${uploadUrl}`);
+  }
   const response = await fetch(uploadUrl, { method: 'PUT', body: data });
   if (!response.ok) {
     throw new Error(`Uploading the attachment failed with ${response.status} ${response.statusText}`);

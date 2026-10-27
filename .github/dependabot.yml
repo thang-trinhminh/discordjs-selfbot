@@ -1,0 +1,28 @@
+# Mo PR nang version moi tuan. Husky van la cong: PR cua Dependabot chi duoc merge
+# sau khi checkout ve va `git push` qua pre-push (lint + test + typecheck).
+#
+# Khong nang major cua @discordjs/* va discord-api-types: cac goi do phai di cung
+# version upstream ghi trong UPSTREAM.md, nang le se lech khoi discord.js v14.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # Gop dev dependency thanh mot PR cho do on.
+      dev:
+        dependency-type: development
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: '@discordjs/*'
+        update-types: [version-update:semver-major]
+      - dependency-name: discord-api-types
+        update-types: [version-update:semver-minor, version-update:semver-major]
+
+  # actions/checkout, actions/setup-node... cung la code chay voi quyen publish.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

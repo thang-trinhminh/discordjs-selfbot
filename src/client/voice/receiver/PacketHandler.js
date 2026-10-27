@@ -64,11 +64,12 @@ class PacketHandler extends EventEmitter {
     return stream;
   }
 
-  makeVideoStream(user, output) {
+  makeVideoStream(user, output, { overwrite } = {}) {
     if (this.videoStreams.has(user)) return this.videoStreams.get(user);
     const stream = new Recorder(this, {
       userId: user,
       output,
+      overwrite,
       portUdpH264: 65506,
       portUdpOpus: 65510,
     });

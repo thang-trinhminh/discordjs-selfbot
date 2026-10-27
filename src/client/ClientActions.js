@@ -7,7 +7,26 @@ const Events = require('../util/Events');
 const { UserRoutes } = require('../util/UserRoutes');
 
 const NITRO_CODE_PATTERN = /(?:discord\.gift|discord(?:app)?\.com\/gifts)\/(\w{16,25})/;
+const INVITE_CODE_PATTERN = /^[\w-]{2,255}$/;
 const OAUTH2_URL_PATTERN = /^https:\/\/(?:canary\.|ptb\.)?discord\.com(?:\/api(?:\/v\d{1,2})?)?\/oauth2\/authorize\?/;
+// Chỉ các tham số OAuth2 mà Discord định nghĩa mới được chép từ link vào body.
+// Chép hết thì link lạ nhét được cả `authorize` hay `location_context` vào.
+const OAUTH2_QUERY_KEYS = new Set([
+  'client_id',
+  'response_type',
+  'redirect_uri',
+  'scope',
+  'state',
+  'prompt',
+  'nonce',
+  'code_challenge',
+  'code_challenge_method',
+  'permissions',
+  'integration_type',
+  'guild_id',
+  'channel_id',
+  'disable_guild_select',
+]);
 
 /**
  * Trả lời hết prompt onboarding của một guild bằng lựa chọn đầu tiên.
@@ -183,7 +202,12 @@ const ClientActions = {
     const { bypassOnboarding: doOnboarding = true, bypassVerify = true } = options;
 
     const code = resolveInviteCode(invite);
-    if (!code) throw new TypeError('Could not resolve an invite code from the given invite');
+    // `resolveInviteCode` trả nguyên chuỗi khi không khớp link nào, và `Routes.invite`
+    // của upstream ghép thẳng vào path: `../` hay `#` trong đó bẻ request mang token
+    // sang endpoint khác. Mã mời thật chỉ gồm chữ, số, `_` và `-`.
+    if (typeof code !== 'string' || !INVITE_CODE_PATTERN.test(code)) {
+      throw new TypeError('Could not resolve an invite code from the given invite');
+    }
 
     const resolved = await this.fetchInvite(code);
 
@@ -238,6 +262,9 @@ const ClientActions = {
 
   /**
    * Cấp quyền cho một link OAuth2.
+   *
+   * Tham số lạ trong query của link bị bỏ qua, không vào body; muốn gửi thêm field
+   * nào thì truyền qua `options`.
    * @param {string} url Link `https://discord.com/oauth2/authorize?...`
    * @param {Object} [options={}] Ghi đè phần body gửi lên
    * @returns {Promise<Object>}
@@ -252,7 +279,7 @@ const ClientActions = {
       permissions: '0',
       integration_type: 0,
       location_context: { guild_id: '10000', channel_id: '10000', channel_type: 10000 },
-      ...Object.fromEntries(query),
+      ...Object.fromEntries([...query].filter(([key]) => OAUTH2_QUERY_KEYS.has(key))),
       ...options,
     };
 

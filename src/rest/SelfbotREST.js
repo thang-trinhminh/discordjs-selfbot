@@ -37,8 +37,20 @@ function buildSelfbotHeaders(clientOptions) {
     'x-discord-locale': 'en-US',
     'x-discord-timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
     'x-super-properties': encodeSuperProperties(properties),
-    ...clientOptions.http?.headers,
+    ...withoutAuthorization(clientOptions.http?.headers),
   };
+}
+
+/**
+ * Bỏ header Authorization khỏi header của người dùng.
+ *
+ * Token chỉ được đến từ `client.login()`. Để `http.headers` đặt được header này
+ * thì một config dựng từ dữ liệu ngoài sẽ gửi request bằng token của người khác.
+ * @param {?Object<string, string>} headers Header người dùng truyền
+ * @returns {Object<string, string>}
+ */
+function withoutAuthorization(headers) {
+  return Object.fromEntries(Object.entries(headers ?? {}).filter(([key]) => key.toLowerCase() !== 'authorization'));
 }
 
 /**

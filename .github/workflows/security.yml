@@ -1,0 +1,55 @@
+# Quet bao mat dinh ky. Khong chay o push: husky van la cong hang ngay (xem
+# .husky/pre-push). Cai nay bat thu husky khong bat duoc — lo hong moi duoc cong
+# bo cho mot dependency ma code cua ta khong doi dong nao.
+name: security
+
+on:
+  schedule:
+    # Thu hai 02:17 UTC. Lech khoi phut 0 de khong ket hang doi cua GitHub.
+    - cron: '17 2 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    env:
+      HUSKY: 0
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Khong de GITHUB_TOKEN nam lai trong .git/config cho cac buoc sau.
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: npm run audit:prod
+      - run: npm run audit:all
+      - run: npm run audit:signatures
+      - run: node --test test/security.test.js
+      - run: npm run check:package
+
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Ghi ket qua vao tab Security > Code scanning.
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Khong de GITHUB_TOKEN nam lai trong .git/config cho cac buoc sau.
+          persist-credentials: false
+
+      - uses: github/codeql-action/init@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          languages: javascript-typescript
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0

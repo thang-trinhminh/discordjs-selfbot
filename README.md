@@ -59,13 +59,14 @@ Under development, **not ready for production**. Not published to npm.
 | [`docs/API.md`](./docs/API.md)           | Everything this fork adds, by area, with a tested/unit/ported status per item |
 | [`MIGRATION.md`](./MIGRATION.md)         | Moving code from `discord.js-selfbot-v13`, and the codemod                    |
 | [`UPSTREAM.md`](./UPSTREAM.md)           | Which upstream files were patched, why, and how to upgrade                    |
+| [`SECURITY.md`](./SECURITY.md)           | Reporting a vulnerability, audit commands, the release checklist              |
 | [`examples/`](./examples)                | Nine runnable scripts                                                         |
 | [`scripts/smoke/`](./scripts/smoke)      | Checking a real token, and the log of past runs                               |
 | [discord.js.dev](https://discord.js.dev) | Everything not selfbot-specific — unchanged from upstream                     |
 
 ## Install
 
-Requires Node.js 20.18 or newer.
+Requires Node.js 22.12 or newer.
 
 ```sh
 npm install @trickstarcandina/discordjs-selfbot
