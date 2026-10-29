@@ -12,6 +12,13 @@ on:
   schedule:
     # Moi ngay 04:37 UTC; npm cap nhat so lieu ngay hom truoc vao luc rang sang UTC.
     - cron: '37 4 * * *'
+  # Chay ngay khi workflow hay script ve vao main, de lan merge dau tien tao luon
+  # nhanh `stats` thay vi de README hien anh hong toi lich chay ke tiep.
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/stats.yml
+      - scripts/download-chart.mjs
   workflow_dispatch:
 
 permissions:
