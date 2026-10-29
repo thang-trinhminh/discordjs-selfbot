@@ -207,12 +207,14 @@ Git hook chạy sẵn qua husky, chia theo tốc độ:
 | `pre-push`   | lint cả repo + unit test + `tsc` và hai bộ `tsd` | ~25s |
 
 Hook là cổng kiểm tra hằng ngày: không có CI khi push, nên `--no-verify` bỏ qua
-được hết. GitHub Actions chỉ chạy ở hai chỗ:
+được hết. GitHub Actions chỉ chạy ở ba chỗ:
 
 - **`publish`**, mỗi lần tạo GitHub release: lint, test, kiểm kiểu, `npm audit`,
   chữ ký registry và soi nội dung tarball, rồi mới publish.
 - **`security`**, hằng tuần và khi chạy tay: `npm audit`, chữ ký, test bảo mật và
   CodeQL.
+- **`stats`**, hằng ngày: vẽ lại biểu đồ lượt tải ở cuối trang này và đẩy lên
+  nhánh `stats`. Đây là workflow duy nhất có quyền ghi vào repo.
 
 Quy ước: code dành cho tài khoản người dùng đi vào **file mới**. Sửa file
 upstream là phương án cuối, và phải ghi vào bảng trong `UPSTREAM.vi.md`.
@@ -236,3 +238,27 @@ vốn là GPL-3.0. Phần kế thừa từ
 [discord.js](https://github.com/discordjs/discord.js) vẫn đến tay bạn kèm giấy
 phép Apache-2.0, toàn văn nằm ở [`LICENSE-APACHE`](./LICENSE-APACHE).
 [`NOTICE`](./NOTICE) ghi rõ phần ghi công cho cả hai upstream.
+
+## Thống kê
+
+Lượt tải mỗi tuần trên npmjs.com (không tính GitHub Packages), vẽ lại hằng ngày
+bởi [workflow `stats`](./.github/workflows/stats.yml), mỗi bản release là một vạch
+đứt. Bấm vào biểu đồ để xem chi tiết theo ngày trên npm-stat.
+
+<div align="center">
+
+<a href="https://npm-stat.com/charts.html?package=%40trickstarcandina%2Fdiscordjs-selfbot">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/trickstarcandina/discordjs-selfbot/stats/downloads-dark.svg">
+    <img alt="Lượt tải npm mỗi tuần" src="https://raw.githubusercontent.com/trickstarcandina/discordjs-selfbot/stats/downloads-light.svg" width="800">
+  </picture>
+</a>
+
+<a href="https://star-history.com/#trickstarcandina/discordjs-selfbot&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=trickstarcandina/discordjs-selfbot&type=Date&theme=dark">
+    <img alt="Số sao GitHub theo thời gian" src="https://api.star-history.com/svg?repos=trickstarcandina/discordjs-selfbot&type=Date" width="800">
+  </picture>
+</a>
+
+</div>

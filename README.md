@@ -206,12 +206,14 @@ Git hooks run through husky, split by speed:
 | `pre-push`   | full lint + unit tests + `tsc` and both `tsd` | ~25s  |
 
 The hooks are the day-to-day gate: there is no CI on push, so `--no-verify` skips
-every check. GitHub Actions runs in two places only:
+every check. GitHub Actions runs in three places only:
 
 - **`publish`**, on every GitHub release: lint, tests, type checks, `npm audit`,
   registry signatures and a check of the tarball contents, then publishes.
 - **`security`**, weekly and on demand: `npm audit`, signatures, the security
   tests and CodeQL.
+- **`stats`**, daily: redraws the download chart at the bottom of this page and
+  pushes it to the `stats` branch. It is the only workflow that writes to the repo.
 
 Convention: user-account code goes in **new files**. Editing an upstream file is a
 last resort and must be recorded in the `UPSTREAM.md` table.
@@ -235,3 +237,27 @@ which is GPL-3.0. Everything inherited from
 [discord.js](https://github.com/discordjs/discord.js) remains available to you
 under Apache-2.0, whose text is kept in [`LICENSE-APACHE`](./LICENSE-APACHE).
 [`NOTICE`](./NOTICE) spells out the attribution for both upstreams.
+
+## Stats
+
+Weekly downloads from npmjs.com (GitHub Packages not included), redrawn every day
+by the [`stats` workflow](./.github/workflows/stats.yml), with a dashed line for each
+release. Click the chart for npm-stat's daily breakdown.
+
+<div align="center">
+
+<a href="https://npm-stat.com/charts.html?package=%40trickstarcandina%2Fdiscordjs-selfbot">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/trickstarcandina/discordjs-selfbot/stats/downloads-dark.svg">
+    <img alt="npm downloads per week" src="https://raw.githubusercontent.com/trickstarcandina/discordjs-selfbot/stats/downloads-light.svg" width="800">
+  </picture>
+</a>
+
+<a href="https://star-history.com/#trickstarcandina/discordjs-selfbot&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=trickstarcandina/discordjs-selfbot&type=Date&theme=dark">
+    <img alt="GitHub stars over time" src="https://api.star-history.com/svg?repos=trickstarcandina/discordjs-selfbot&type=Date" width="800">
+  </picture>
+</a>
+
+</div>
